@@ -139,7 +139,7 @@ fn run() -> Result<ExitCode> {
                 println!("  - {c}");
             }
             println!();
-            if p.id == "runtime-with-context" {
+            if p.includes(spectrum::component::Kind::RetrievedChunk) {
                 println!(
                     "PRIVACY: this profile digests retrieved content. A content-derived chunk \
                      digest is a cross-session, cross-agent fingerprint of what was read — two \

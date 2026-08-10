@@ -16,14 +16,13 @@ and does it catch anything a static one does not?
 - **There is no default profile.** `--profile` is required on every command
   that composes a manifest, so no invocation of this tool can produce an
   unmarked "the AgBOM." A digest only ever exists under a stated theory of
-  what composition means, and `spectrum diff` refuses to compare digests
-  taken under different profiles rather than reporting a difference.
+  what composition means, and the library's `diff` refuses to compare
+  digests taken under different profiles rather than reporting a difference.
 - **What is real:** blob and file digests, JCS canonicalization
   (`transit::jcs`, not a second implementation), the projection from
   CycloneDX, the composition register and its one-way replay, MCP tool-list
   re-measurement against the local hostile server, and the detection
-  harness — which executes real substitutions against real profiles, not a
-  simulation of them.
+  harness — which executes real substitutions against real profiles.
 - **What is modelled:** hosted-model weight identity is `Declared` and
   **cannot** be `Measured` — no measurement of a hosted model's weights
   exists from outside the provider. Training-data lineage is permanently
@@ -36,7 +35,7 @@ and does it catch anything a static one does not?
   purpose, against every shipped profile, so that no future change can make
   the negative quietly pass.
 - **Nothing verifies a digest.** No infrastructure publishes expected
-  AgBOMs anywhere in this programme, so `spectrum diff` against a prior
+  AgBOMs anywhere in this programme, so the library's `diff` against a prior
   digest of the same deployment is the only operation available. A digest is
   a change detector between two records of the same system, not a checkable
   claim about one record in isolation.

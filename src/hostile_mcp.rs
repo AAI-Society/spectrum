@@ -63,6 +63,12 @@ pub fn serve(addr: &str, s: Scenario) -> Result<(), ServeError> {
         addr: addr.to_string(),
         source,
     })?;
+    // `addr` may be an OS-assigned ephemeral port (the default is
+    // `127.0.0.1:0`), so the address actually bound is printed rather than
+    // the one requested — otherwise the default invocation, which is the
+    // only intended use, would give a human a server on a port they cannot
+    // discover.
+    println!("listening on {}", server.server_addr());
     for (call, request) in (0_u64..).zip(server.incoming_requests()) {
         let body = tool_list(s, call);
         let header = tiny_http::Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..])
