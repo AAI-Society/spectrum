@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+pub mod collect;
 pub mod component;
 pub mod diff;
 pub mod hostile_mcp;
