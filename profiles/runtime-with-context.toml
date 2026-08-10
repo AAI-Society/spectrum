@@ -1,0 +1,15 @@
+# Everything that enters the context is part of composition.
+# NOTE: this profile is a privacy regression and the design says so. A
+# content-derived chunk digest is a cross-session, cross-agent fingerprint of
+# what was read. OPEN FORK 7 is the decision point and it is not resolved.
+id = "runtime-with-context"
+kinds = [
+  "model", "system_prompt", "tool_definition", "code_dependency",
+  "mcp_server", "sub_agent", "retrieved_chunk", "memory_read",
+]
+coverage = [
+  "which retrieved content influenced a decision (C1.2.2; see finding 4)",
+  "whether a validly sourced component is adversarial",
+  "training data behind a hosted model",
+  "token-level provenance within a retrieved chunk",
+]

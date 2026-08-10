@@ -1,0 +1,14 @@
+# Reproduces the reference implementation's behaviour: composition is fixed at
+# task start. Shipped as a named baseline so the cost and detection power of
+# the other profiles are measured against it rather than asserted over it.
+# It is not named `default` because it is not the default answer; it is the
+# current one, and this tool exists partly to show what it misses.
+id = "build-manifest"
+kinds = ["model", "system_prompt", "tool_definition", "code_dependency"]
+coverage = [
+  "any composition change after task start",
+  "MCP servers that alter their tool list between calls",
+  "retrieved documents and memory reads",
+  "sub-agents spawned during the task",
+  "training data behind a hosted model",
+]

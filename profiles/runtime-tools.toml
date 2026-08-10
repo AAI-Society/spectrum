@@ -1,0 +1,9 @@
+# The capability surface changes at runtime and is small enough to re-measure.
+id = "runtime-tools"
+kinds = ["model", "system_prompt", "tool_definition", "code_dependency", "mcp_server", "sub_agent"]
+coverage = [
+  "retrieved documents and memory reads",
+  "which retrieved content influenced a decision (C1.2.2; see finding 4)",
+  "training data behind a hosted model",
+  "whether a validly sourced component is adversarial",
+]
