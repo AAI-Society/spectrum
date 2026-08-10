@@ -30,6 +30,26 @@ fn event_with(kind: EventKind, hook: &str, id: &str) -> Event {
 }
 
 #[test]
+fn every_event_kind_tag_is_distinct() {
+    // `event_digest` hashes `EventKind::tag()`, so two event kinds sharing a
+    // tag would make "this component was added" and "this component was
+    // removed" advance the register identically — two opposite composition
+    // changes with one value. The variant list is literal, so adding an
+    // `EventKind` without a tag is a compile error here.
+    let all = [
+        EventKind::ComponentAdded,
+        EventKind::ComponentChanged,
+        EventKind::ComponentRemoved,
+    ];
+    let tags: std::collections::HashSet<&str> = all.iter().map(|k| k.tag()).collect();
+    assert_eq!(
+        tags.len(),
+        all.len(),
+        "two `EventKind` variants share a tag, so two composition changes digest alike"
+    );
+}
+
+#[test]
 fn a_static_deployment_never_advances_its_register() {
     // OPEN FORK 3's recommendation rests on this: the register degenerates
     // exactly to the static root when nothing changes, so the field means the

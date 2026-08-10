@@ -116,8 +116,45 @@ fn run() -> Result<ExitCode> {
             let components = spectrum::project::from_cyclonedx(&text, &p)?;
             let m = spectrum::manifest::Manifest::new(&p, components);
             println!("profile   {}", p.id);
-            println!("components {}", m.components.len());
+            println!("components {}", m.components().len());
             println!("digest    {}", m.digest()?);
+
+            // The design's fail-loud table wants `compose` to refuse when a
+            // declared kind has no collector. It warns instead: refusing would
+            // make step 1 unusable, because four of the eight kinds have no
+            // collector until step 5. Warning keeps the digest available and
+            // keeps it from reading as a complete answer.
+            let collected: std::collections::BTreeSet<_> =
+                m.components().iter().map(|c| c.kind).collect();
+            let absent: Vec<&str> = p
+                .kinds
+                .iter()
+                .filter(|k| !collected.contains(k))
+                .map(|k| k.tag())
+                .collect();
+            if !absent.is_empty() {
+                println!();
+                println!("DECLARED BUT ABSENT — this profile includes these kinds and no");
+                println!("component of them was collected, so the digest above says nothing");
+                println!("about them. They are missing, not empty:");
+                for k in &absent {
+                    println!("  - {k}");
+                }
+            }
+
+            let dropped = spectrum::project::dropped_types(&text)?;
+            if !dropped.is_empty() {
+                println!();
+                println!("UNMAPPED CycloneDX TYPES — present in the document, no kind to");
+                println!("project them onto, dropped before the profile was consulted:");
+                for (t, n) in &dropped {
+                    println!("  - {t} ({n})");
+                }
+            }
+
+            println!();
+            println!("The digest commits only to what was actually collected — the components");
+            println!("counted above, and nothing listed under it.");
             println!();
             println!(
                 "This digest is a commitment under the `{}` theory of what composition",

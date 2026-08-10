@@ -1,6 +1,6 @@
 use spectrum::component::{digest, Kind, Witness};
 use spectrum::profile::Profile;
-use spectrum::project::from_cyclonedx;
+use spectrum::project::{dropped_types, from_cyclonedx};
 
 fn profile() -> Profile {
     Profile::load(std::path::Path::new("profiles/build-manifest.toml")).unwrap()
@@ -61,6 +61,45 @@ fn kinds_outside_the_profile_are_dropped() {
     let cs = from_cyclonedx(&fixture("cyclonedx-a.json"), &narrow).unwrap();
     assert_eq!(cs.len(), 1);
     assert_eq!(cs[0].kind, Kind::Model);
+}
+
+#[test]
+fn unmapped_cyclonedx_types_are_reported_with_counts() {
+    // The projection silently drops any `type` it has no kind for, and no
+    // shipped profile's `coverage` mentions those types, so before this the
+    // only trace of a dropped `container` was its absence from a count.
+    let d = dropped_types(&fixture("cyclonedx-unmapped.json")).unwrap();
+    assert_eq!(d.get("container"), Some(&2));
+    assert_eq!(d.get("operating-system"), Some(&1));
+    assert_eq!(d.get("firmware"), Some(&1));
+    // `machine-learning-model` maps to `Kind::Model`, so it is projected, not
+    // dropped, and must not appear here.
+    assert_eq!(d.get("machine-learning-model"), None);
+    assert_eq!(d.len(), 3);
+}
+
+#[test]
+fn a_document_with_no_unmapped_types_reports_nothing_dropped() {
+    // The empty direction: a clean report must mean "nothing was dropped",
+    // not "we did not look". Otherwise the reassuring case is the unchecked
+    // one.
+    assert!(dropped_types(&fixture("cyclonedx-a.json"))
+        .unwrap()
+        .is_empty());
+}
+
+#[test]
+fn dropped_types_is_blind_to_the_profile() {
+    // A kind the profile excludes was mapped and then filtered — the
+    // profile's `kinds` list states that. A type with no mapping was never a
+    // candidate under any profile, which nothing states. The two are
+    // different omissions and this reports only the second, so narrowing a
+    // profile must not change what it returns.
+    let wide = dropped_types(&fixture("cyclonedx-unmapped.json")).unwrap();
+    let p = profile();
+    let projected = from_cyclonedx(&fixture("cyclonedx-unmapped.json"), &p).unwrap();
+    assert_eq!(projected.len(), 1, "only the model maps and is in-profile");
+    assert_eq!(wide.values().sum::<usize>(), 4);
 }
 
 #[test]

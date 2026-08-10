@@ -1,4 +1,5 @@
 use spectrum::component::{digest, ComponentRef, Kind, Witness};
+use std::collections::HashSet;
 
 fn base() -> ComponentRef {
     ComponentRef {
@@ -63,6 +64,55 @@ fn a_component_id_is_compared_as_opaque_bytes() {
     let mut b = base();
     b.id = "pkg:generic/x@1.0.0".into();
     assert_ne!(digest(&a).unwrap(), digest(&b).unwrap());
+}
+
+#[test]
+fn every_kind_tag_is_distinct() {
+    // `Kind::tag`'s own doc comment says the strings are hand-written because
+    // they are inside a digest. Nothing checked that two of them were not the
+    // same string. A copy-paste — `Kind::MemoryRead => "retrieved_chunk"` —
+    // would make a memory read and a retrieved chunk hash identically,
+    // silently merging two composition kinds, and every other test in this
+    // repository would still pass.
+    //
+    // The variant list is written out literally rather than derived, so
+    // adding a `Kind` without adding a tag is a compile error here.
+    let all = [
+        Kind::Model,
+        Kind::SystemPrompt,
+        Kind::ToolDefinition,
+        Kind::McpServer,
+        Kind::CodeDependency,
+        Kind::RetrievedChunk,
+        Kind::MemoryRead,
+        Kind::SubAgent,
+    ];
+    let tags: HashSet<&str> = all.iter().map(|k| k.tag()).collect();
+    assert_eq!(
+        tags.len(),
+        all.len(),
+        "two `Kind` variants share a tag, so two composition kinds digest alike"
+    );
+}
+
+#[test]
+fn every_witness_tag_is_distinct() {
+    // Same hazard, and worse here: the witness class is inside the digest
+    // (fork 2) precisely so a `Declared` component cannot hash like a
+    // `Measured` one. Two witness classes sharing a tag would undo that
+    // resolution without touching the code that implements it.
+    let all = [
+        Witness::Measured,
+        Witness::Attested,
+        Witness::Declared,
+        Witness::Opaque,
+    ];
+    let tags: HashSet<&str> = all.iter().map(|w| w.tag()).collect();
+    assert_eq!(
+        tags.len(),
+        all.len(),
+        "two `Witness` variants share a tag, so two evidence classes digest alike"
+    );
 }
 
 #[test]

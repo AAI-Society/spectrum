@@ -1,6 +1,7 @@
 use crate::component::{ComponentRef, Kind, Witness};
 use crate::profile::Profile;
 use serde::Deserialize;
+use std::collections::BTreeMap;
 
 /// The subset of CycloneDX this projection reads.
 ///
@@ -43,9 +44,16 @@ pub enum ProjectError {
     Parse(#[from] serde_json::Error),
 }
 
-/// Map CycloneDX component types onto our kinds. Types we have no kind for
-/// are dropped, which is safe because the profile's `coverage` says what is
-/// not captured.
+/// Map CycloneDX component types onto our kinds.
+///
+/// Types we have no kind for — `container`, `operating-system`, `firmware`,
+/// `device`, `platform` and anything else CycloneDX defines — are dropped.
+/// That is **not** covered by the profile's `coverage`: no shipped profile's
+/// coverage mentions unmapped CycloneDX types, so nothing in a profile tells
+/// an operator that a `container` in their document did not reach the digest.
+/// What is true is that [`dropped_types`] counts them and `spectrum compose`
+/// prints the counts under the digest, so a dropped type is visible on the
+/// run that dropped it rather than inferred from a list it is not on.
 fn kind_of(t: &str) -> Option<Kind> {
     match t {
         "machine-learning-model" => Some(Kind::Model),
@@ -96,5 +104,28 @@ pub fn from_cyclonedx(json: &str, p: &Profile) -> Result<Vec<ComponentRef>, Proj
     }
     out.sort();
     out.dedup();
+    Ok(out)
+}
+
+/// The CycloneDX `type` values in this document that [`kind_of`] has no
+/// mapping for, with how many components carried each.
+///
+/// A separate function rather than a second return value from
+/// [`from_cyclonedx`], because that signature is what the projection's tests
+/// bind to and a digest-bearing entry point is the wrong place to widen for
+/// the sake of a report.
+///
+/// This is deliberately blind to the profile. A type with no mapping was never
+/// a candidate for any profile, so it is dropped for a different reason than a
+/// mapped kind the profile excludes — the profile's `kinds` list states the
+/// second and nothing states the first, which is why this exists.
+pub fn dropped_types(json: &str) -> Result<BTreeMap<String, usize>, ProjectError> {
+    let bom: Bom = serde_json::from_str(json)?;
+    let mut out = BTreeMap::new();
+    for c in bom.components {
+        if kind_of(&c.kind).is_none() {
+            *out.entry(c.kind).or_insert(0) += 1;
+        }
+    }
     Ok(out)
 }

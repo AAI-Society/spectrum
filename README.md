@@ -18,18 +18,30 @@ and does it catch anything a static one does not?
   unmarked "the AgBOM." A digest only ever exists under a stated theory of
   what composition means, and the library's `diff` refuses to compare
   digests taken under different profiles rather than reporting a difference.
-- **What is real:** blob and file digests, JCS canonicalization
-  (`transit::jcs`, not a second implementation), the projection from
-  CycloneDX, the composition register and its one-way replay, MCP tool-list
-  re-measurement against the local hostile server, and the detection
-  harness — which executes real substitutions against real profiles.
-- **What is modelled:** hosted-model weight identity is `Declared` and
-  **cannot** be `Measured` — no measurement of a hosted model's weights
-  exists from outside the provider. Training-data lineage is permanently
-  `Opaque`. **Influence is absent, not stubbed.** There is no `influence`
-  field and no API that could produce one, because a stub here would be
-  mistaken for the C1.2.2 link — which retrieved content influenced a
-  decision — that nobody can compute.
+- **What is real:** the component, manifest, event and register digests, each
+  domain-tagged and length-prefixed; JCS canonicalization (`transit::jcs`, not
+  a second implementation); the projection from CycloneDX; the composition
+  register and its one-way replay; MCP tool-list re-measurement against the
+  local hostile server; and the detection harness — which executes real
+  substitutions against real profiles. **Nothing here digests a file or a
+  blob.** Every digest in this crate is over a `ComponentRef`, a manifest, an
+  event, or an MCP tool list; a `content_digest` that names file bytes arrives
+  already computed, from the CycloneDX document, and this tool copies it.
+- **What is modelled, and what is only intended:** **influence is absent, not
+  stubbed** — there is no `influence` field and no API that could produce one,
+  because a stub here would be mistaken for the C1.2.2 link (which retrieved
+  content influenced a decision) that nobody can compute. That absence is
+  enforced today, by there being no such field. Two further properties are
+  *intended discipline, not enforced behaviour*: that hosted-model weight
+  identity is `Declared` and never `Measured` — no measurement of a hosted
+  model's weights exists from outside the provider — and that training-data
+  lineage is `Opaque`. **The code does not enforce either.** There is no model
+  collector (`src/collect/mod.rs` declares only `mcp`), `Witness::Opaque` is
+  constructed nowhere in the crate, no test asserts the property, and
+  `ComponentRef` is a plain public struct, so a caller can write `Measured`
+  against a hosted model today and nothing objects. These are the rules the
+  model collector of [build step 5](#the-eight-open-forks) must be built to,
+  written down before it exists rather than after.
 - **What it detects and does not:** the tool-definition rug-pull, yes.
   Content poisoning, **no** — and `tests/detect.rs` asserts that negative on
   purpose, against every shipped profile, so that no future change can make
@@ -105,6 +117,19 @@ asserts this negative against all three profiles, on purpose, and the test's
 own comment says it is the row most likely to be deleted by someone tidying
 the suite. It should not be.
 
+**What the harness is, and is not.** It encodes the argument rather than
+discovering it: in `detect::run`, `Outcome::Detected` is reachable only when
+`moved` is set, and `moved` is set only inside the `p.includes(Kind::McpServer)`
+branch, so a content attack cannot reach `Detected` by construction of the
+predicate. That is deliberate and the code's own doc comment gives the reason —
+a verifier has no expected value for a chunk retrieved at runtime, so a
+register that moved because a chunk arrived is a record of arrival and not a
+detection. The negative is correct and the argument for it is sound; what the
+harness does is execute that argument against real profiles and real
+substitutions, not independently measure its way to it. Read the result as a
+worked consequence of the design, not as an experiment that could have come
+out the other way on the content row.
+
 If that finding holds — and the harness in this repository says it does —
 the honest conclusion for P10 is narrower than "AgBOM is inventory" and more
 useful than "AgBOM is a security control": **a running composition
@@ -139,10 +164,19 @@ cost and requires a real deployment to observe.
 | command | purpose |
 | --- | --- |
 | `spectrum bench-mcp [--iterations N] [--tools N]` | local cost of re-measuring an MCP tool list |
-| `spectrum compose --profile <p> --bom <b>` | project a CycloneDX document under a profile and print the manifest digest |
+| `spectrum compose --profile <p> --bom <b>` | project a CycloneDX document under a profile and print the manifest digest, plus the gaps in it |
 | `spectrum coverage --profile <p>` | print what this profile does not capture |
 | `spectrum detect --scenario <name>` | run one attack against every profile and report what each catches |
 | `spectrum serve-hostile --scenario <name> [--addr <addr>]` | serve one hostile-MCP scenario over HTTP, for manual exploration only |
+
+`compose` **warns rather than refuses** when a profile declares a kind no
+collector fills. `build-manifest` declares four kinds and the CycloneDX
+projection supplies two of them, so every run prints the declared-but-absent
+kinds under the digest, and the CycloneDX `type` values the projection had no
+kind for, with counts. The design's fail-loud table asks for a refusal here;
+refusing would make this step unusable, since four of the eight kinds have no
+collector until step 5. The compromise is that the digest still prints and
+never prints alone.
 
 `detect` and `serve-hostile` accept `none`/`tool-rug-pull`/`added-tool`/`content-poisoning`
 and `stable`/`rug-pull`/`added-tool` respectively; an unrecognized name exits
@@ -156,13 +190,30 @@ offline, with no network, no credentials, and no socket.
 
 `spectrum` implements the design at
 [`../poc-research-roadmap/docs/superpowers/specs/2026-08-10-spectrum-design.md`](../poc-research-roadmap/docs/superpowers/specs/2026-08-10-spectrum-design.md),
-which leaves eight forks open. This tool takes the design's recommended
-branch on each and does not resolve any of them further; read the design for
-the full argument on each side.
+which leaves eight forks open. **This work resolves one of them, and it is
+not the case that the tool takes the recommended branch on each.** The design
+is a draft with its forks deliberately unresolved, and nothing here closes one
+that its own build order puts after this point. Read the design for the full
+argument on each side; what this repository does to each is:
+
+| fork | what this work does |
+| --- | --- |
+| 1 SPDX support | **Diverges from the recommendation.** The design recommends **(b)**, read both and emit CycloneDX. This tool reads CycloneDX only, which is branch **(a)**. That is what the plan says and what the code does; a second reader is a second identity derivation to keep in agreement, and it is not built. |
+| 2 witness class in the digest | **Resolved, as recommended: (a), inside.** Pinned in both directions by `tests/component_identity.rs` — `the_witness_class_is_inside_the_digest` asserts a `Declared` component does not hash like a `Measured` one, and `every_witness_tag_is_distinct` asserts no two witness classes can hash alike by a copy-paste. Reversing this fork is a visible test change. |
+| 5 MCP server identity | **Instrumented, not resolved.** `runtime-tools` implements (b), re-measurement, and the detection harness and the benchmark exist to *measure* what (b) costs and catches. A negligible local cost is a necessary and not a sufficient condition; the network round trip decides this fork and requires a real deployment. |
+| 7 context linkability | **Half built, and see below.** |
+| 3, 4, 6, 8 | **Untouched.** No branch is taken because nothing here reaches the decision: no field of this tool is emitted as an `agbom_digest` (3), there is no prompt collector (4), no retriever (6), and no delegation (8). The collectors and the `ephemeris` integration that would decide them are the design's build step 5, which has not begun. Saying this tool "takes the recommended branch" on them would be an empty claim about code that does not exist. |
+
+One thing bearing on fork 3 is worth naming without closing it: `register.rs`'s
+`a_static_deployment_never_advances_its_register` pins the property the
+recommendation rests on — that (b) degenerates exactly to (a) when nothing
+changes. That is evidence for the recommendation, not a resolution of it,
+because nothing in this tool fills the field the fork is about.
 
 1. **SPDX support** — read CycloneDX only, read both and emit CycloneDX, or
    read and emit both. The design recommends reading both, emitting only
-   CycloneDX.
+   CycloneDX. **This tool reads CycloneDX only** — the first branch, not the
+   recommended one. An operator with an SPDX document cannot use `compose`.
 2. **Does the witness class contribute to the digest?** Inside (upgrading a
    component's evidence changes the digest) or outside (a `Declared` and a
    `Measured` component with the same claimed identity would hash
@@ -183,10 +234,16 @@ the full argument on each side.
    obtainable from outside it). The design recommends per-chunk.
 7. **Context digests are a cross-session fingerprint** — unlinkable by
    default (salted, kills cross-session `diff`), linkable by default with
-   the leak documented, or reference-only (leaks less, detects no
-   tampering). The design recommends linkable by default, with the leak
-   printed by `spectrum coverage` rather than buried in a README. This fork
-   is unresolved and the benchmark above does not resolve it either.
+   the leak documented *and* a `--profile unlinkable` that salts, or
+   reference-only (leaks less, detects no tampering). The design recommends
+   the second, with the leak printed by `spectrum coverage` rather than
+   buried in a README. **Only half of that branch is built.**
+   `runtime-with-context` is linkable and `spectrum coverage` prints the
+   leak, keyed on the `retrieved_chunk` kind rather than on a profile name.
+   **The salting half does not exist**: there is no `unlinkable` profile, no
+   salt, and no code that could produce one, so an operator who reads the
+   warning has nothing to switch to. This fork is unresolved and the
+   benchmark above does not resolve it either.
 8. **Cross-agent composition** — does a delegator's manifest link to a
    delegate's manifest root, or recursively include the delegate's full
    composition? The design recommends linking only, since a delegate's

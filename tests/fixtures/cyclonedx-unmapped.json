@@ -1,0 +1,36 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:0c1d2e3f-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
+  "version": 1,
+  "metadata": { "timestamp": "2026-08-10T09:00:02Z" },
+  "components": [
+    {
+      "type": "machine-learning-model",
+      "name": "classifier",
+      "version": "3.1.0",
+      "purl": "pkg:generic/classifier@3.1.0",
+      "hashes": [{ "alg": "SHA-256", "content": "aa11" }]
+    },
+    {
+      "type": "container",
+      "name": "agent-runtime",
+      "version": "sha256-deadbeef"
+    },
+    {
+      "type": "container",
+      "name": "sidecar",
+      "version": "sha256-cafebabe"
+    },
+    {
+      "type": "operating-system",
+      "name": "debian",
+      "version": "12"
+    },
+    {
+      "type": "firmware",
+      "name": "tpm",
+      "version": "2.0"
+    }
+  ]
+}

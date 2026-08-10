@@ -95,6 +95,61 @@ fn a_duplicate_component_does_not_change_the_manifest_digest() {
 }
 
 #[test]
+fn the_manifest_digest_of_a_two_kind_manifest_is_pinned() {
+    // This test exists so that reordering the `Kind` variants is a visible
+    // test failure rather than a silent change to every multi-kind digest.
+    //
+    // `ComponentRef` derives `Ord` with `kind` first, so the *declaration
+    // order* of `Kind` decides the order `Manifest::new` sorts into and
+    // therefore the order `Manifest::digest` concatenates in. Swapping two
+    // variants is a diff that looks cosmetic — the tags are pinned, the
+    // components are unchanged, the count is unchanged — and it moves the
+    // digest of every manifest holding more than one kind.
+    //
+    // `component_order_does_not_change_the_manifest_digest` cannot catch it,
+    // because it re-sorts both sides and so compares two digests that moved
+    // together. Only a hardcoded expected value catches it.
+    //
+    // `comps()` is deliberately a *two-kind* manifest (`Model` and
+    // `CodeDependency`), because a one-kind manifest's digest is invariant
+    // under a `Kind` reorder and would pin nothing.
+    //
+    // The value below was produced by running this code, not derived by hand.
+    // If it fails, do not update it without establishing which input moved:
+    // the tags, the component fields, the domain tags, or the enum order.
+    let p = profile("build-manifest");
+    assert_eq!(
+        Manifest::new(&p, comps()).digest().unwrap(),
+        "sha-256:748251dd0aea6a90dcf19fa909f4d6478fb75062d2ac154b2bb33ce0d1afe9fa"
+    );
+}
+
+#[test]
+fn a_manifest_exposes_its_components_sorted_however_it_was_built() {
+    // The invariant `Manifest`'s doc comment promises, asserted through the
+    // only surface a caller has. `components` is a private field behind a
+    // `&[ComponentRef]` accessor, so there is no `push`, no `components_mut`
+    // and no way to append after construction — which is the half of this
+    // that cannot be tested, only prevented. What is testable is that the
+    // accessor's output is sorted whatever order the input arrived in.
+    //
+    // It matters because `Manifest::digest` concatenates in slice order while
+    // `diff::compare` indexes into a `BTreeMap` and does not. If a caller
+    // could disturb the order, two manifests could `compare()` as identical
+    // and digest differently: a producer and a verifier in one crate
+    // disagreeing about the same pair.
+    let p = profile("build-manifest");
+    let mut unsorted = comps();
+    unsorted.reverse();
+    assert_ne!(unsorted, comps(), "the fixture is already in sorted order");
+
+    let m = Manifest::new(&p, unsorted);
+    let mut expected = m.components().to_vec();
+    expected.sort();
+    assert_eq!(m.components(), expected.as_slice());
+}
+
+#[test]
 fn an_empty_manifest_still_digests_and_is_distinct_per_profile() {
     let a = Manifest::new(&profile("build-manifest"), vec![])
         .digest()

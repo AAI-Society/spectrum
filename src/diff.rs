@@ -51,10 +51,10 @@ pub enum DiffError {
 /// one side of a conflicting pair.
 fn index(m: &Manifest) -> Result<BTreeMap<(Kind, &str), &ComponentRef>, DiffError> {
     let mut out = BTreeMap::new();
-    for c in &m.components {
+    for c in m.components() {
         if out.insert((c.kind, c.id.as_str()), c).is_some() {
             return Err(DiffError::DuplicateComponent {
-                profile: m.profile_id.clone(),
+                profile: m.profile_id().to_string(),
                 kind: c.kind,
                 id: c.id.clone(),
             });
@@ -64,10 +64,10 @@ fn index(m: &Manifest) -> Result<BTreeMap<(Kind, &str), &ComponentRef>, DiffErro
 }
 
 pub fn compare(a: &Manifest, b: &Manifest) -> Result<Vec<Difference>, DiffError> {
-    if a.profile_id != b.profile_id {
+    if a.profile_id() != b.profile_id() {
         return Err(DiffError::ProfileMismatch {
-            left: a.profile_id.clone(),
-            right: b.profile_id.clone(),
+            left: a.profile_id().to_string(),
+            right: b.profile_id().to_string(),
         });
     }
 
