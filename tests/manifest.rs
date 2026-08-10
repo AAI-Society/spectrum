@@ -82,6 +82,19 @@ fn adding_a_component_changes_the_manifest_digest() {
 }
 
 #[test]
+fn a_duplicate_component_does_not_change_the_manifest_digest() {
+    // Dedup is part of a manifest's identity: a manifest that listed the
+    // same component twice would otherwise digest differently from one that
+    // listed it once, because the component-count length prefix makes that
+    // difference real, not incidental.
+    let p = profile("build-manifest");
+    let c = comps()[0].clone();
+    let once = Manifest::new(&p, vec![c.clone()]).digest().unwrap();
+    let twice = Manifest::new(&p, vec![c.clone(), c]).digest().unwrap();
+    assert_eq!(twice, once);
+}
+
+#[test]
 fn an_empty_manifest_still_digests_and_is_distinct_per_profile() {
     let a = Manifest::new(&profile("build-manifest"), vec![])
         .digest()
