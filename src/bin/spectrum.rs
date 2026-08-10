@@ -48,6 +48,10 @@ fn synthetic(tools: u32) -> String {
 fn run() -> Result<ExitCode> {
     match Cli::parse().cmd {
         Cmd::BenchMcp { iterations, tools } => {
+            if iterations == 0 {
+                anyhow::bail!("--iterations must be greater than 0");
+            }
+
             // Warm up, so the first allocation does not land in the number.
             let body = synthetic(tools);
             for _ in 0..100 {
