@@ -1,0 +1,53 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      # spectrum depends on one private sibling repo (transit; see
+      # Cargo.toml), and a workflow's default GITHUB_TOKEN is scoped to THIS
+      # repository only, so it cannot read it. This needs a token with read
+      # access to the org's repos, stored as the DEPS_READ_TOKEN secret.
+      #
+      # The insteadOf rewrite below only takes effect because
+      # .cargo/config.toml sets `net.git-fetch-with-cli = true` — cargo's
+      # default libgit2 transport ignores git's url.*.insteadOf rewriting
+      # entirely, so it would silently keep trying the unauthenticated
+      # https://github.com/... URL and fail with the opaque "could not read
+      # Username" error this step exists to prevent. That coupling is
+      # load-bearing: deleting `git-fetch-with-cli = true` from
+      # .cargo/config.toml silently breaks this authentication fix, and
+      # nothing here would catch it happening.
+      - name: authenticate to the private dependency repo
+        env:
+          DEPS_READ_TOKEN: ${{ secrets.DEPS_READ_TOKEN }}
+        run: |
+          if [ -z "${DEPS_READ_TOKEN}" ]; then
+            echo "::error::DEPS_READ_TOKEN is not set. spectrum depends on a"
+            echo "::error::PRIVATE repo (transit) and the default GITHUB_TOKEN"
+            echo "::error::cannot read it. Create a fine-grained PAT with read"
+            echo "::error::access to the org's repos and add it as the"
+            echo "::error::DEPS_READ_TOKEN repository secret."
+            exit 1
+          fi
+          git config --global \
+            url."https://x-access-token:${DEPS_READ_TOKEN}@github.com/".insteadOf \
+            "https://github.com/"
+
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+      # Smoke coverage only. This does NOT redirect into results/ and does
+      # NOT diff against a committed file: a wall-clock timing is never
+      # byte-stable, so a `git diff --exit-code` guard on it would fail on
+      # every run for reasons that have nothing to do with a code change.
+      # results/mcp-remeasurement.md is a committed artifact of one real,
+      # measured run and is not regenerated here.
+      - run: cargo run --release -- bench-mcp --tools 8
+      - run: cargo run --release -- bench-mcp --tools 64

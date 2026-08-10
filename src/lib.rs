@@ -2,6 +2,7 @@
 
 pub mod collect;
 pub mod component;
+pub mod detect;
 pub mod diff;
 pub mod hostile_mcp;
 pub mod manifest;
