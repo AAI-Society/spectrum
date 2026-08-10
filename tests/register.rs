@@ -14,6 +14,21 @@ fn event(id: &str) -> Event {
     }
 }
 
+/// Like `event`, but with `kind` and `hook` as parameters so tests can vary
+/// exactly one of `Event`'s three digest-contributing fields at a time.
+fn event_with(kind: EventKind, hook: &str, id: &str) -> Event {
+    Event {
+        kind,
+        hook: hook.into(),
+        component: ComponentRef {
+            kind: Kind::RetrievedChunk,
+            id: id.into(),
+            content_digest: Some(format!("sha-256:{id}")),
+            witness: Witness::Measured,
+        },
+    }
+}
+
 #[test]
 fn a_static_deployment_never_advances_its_register() {
     // OPEN FORK 3's recommendation rests on this: the register degenerates
@@ -87,6 +102,73 @@ fn replaying_a_truncated_log_does_not_reproduce_the_register() {
     )
     .unwrap();
     assert_ne!(short.value(), r.value());
+}
+
+#[test]
+fn the_hook_is_inside_the_event_digest() {
+    // The same component arriving at CONTEXT_ASSEMBLY and at MEMORY_WRITE are
+    // different composition changes, so the hook must move the register.
+    let mut a = Register::genesis("runtime-tools", "sha-256:aa");
+    a.extend(&event_with(
+        EventKind::ComponentAdded,
+        "CONTEXT_ASSEMBLY",
+        "chunk-1",
+    ))
+    .unwrap();
+
+    let mut b = Register::genesis("runtime-tools", "sha-256:aa");
+    b.extend(&event_with(
+        EventKind::ComponentAdded,
+        "MEMORY_WRITE",
+        "chunk-1",
+    ))
+    .unwrap();
+
+    assert_ne!(a.value(), b.value());
+}
+
+#[test]
+fn the_event_kind_is_inside_the_event_digest() {
+    let mut a = Register::genesis("runtime-tools", "sha-256:aa");
+    a.extend(&event_with(
+        EventKind::ComponentAdded,
+        "CONTEXT_ASSEMBLY",
+        "chunk-1",
+    ))
+    .unwrap();
+
+    let mut b = Register::genesis("runtime-tools", "sha-256:aa");
+    b.extend(&event_with(
+        EventKind::ComponentChanged,
+        "CONTEXT_ASSEMBLY",
+        "chunk-1",
+    ))
+    .unwrap();
+
+    assert_ne!(a.value(), b.value());
+}
+
+#[test]
+fn identical_events_extend_two_registers_identically() {
+    // The equal direction, closing the loop with the two tests above: same
+    // kind, same hook, same component must produce the same register value.
+    let mut a = Register::genesis("runtime-tools", "sha-256:aa");
+    a.extend(&event_with(
+        EventKind::ComponentAdded,
+        "CONTEXT_ASSEMBLY",
+        "chunk-1",
+    ))
+    .unwrap();
+
+    let mut b = Register::genesis("runtime-tools", "sha-256:aa");
+    b.extend(&event_with(
+        EventKind::ComponentAdded,
+        "CONTEXT_ASSEMBLY",
+        "chunk-1",
+    ))
+    .unwrap();
+
+    assert_eq!(a.value(), b.value());
 }
 
 #[test]
