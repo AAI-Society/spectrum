@@ -34,16 +34,33 @@ pub enum DiffError {
          theories is not a difference between two systems"
     )]
     ProfileMismatch { left: String, right: String },
+    #[error(
+        "the `{profile}` manifest carries two different claims about component `{kind:?}` `{id}`; \
+         refusing to compare a manifest that is inconsistent with itself"
+    )]
+    DuplicateComponent {
+        profile: String,
+        kind: Kind,
+        id: String,
+    },
 }
 
 /// Components are keyed by `(kind, id)` — their identity as *things*, not
 /// their digest, since a changed digest is the difference we want to report
-/// rather than a different component.
-fn index(m: &Manifest) -> BTreeMap<(Kind, &str), &ComponentRef> {
-    m.components
-        .iter()
-        .map(|c| ((c.kind, c.id.as_str()), c))
-        .collect()
+/// rather than a different component. Refuses rather than silently keeping
+/// one side of a conflicting pair.
+fn index(m: &Manifest) -> Result<BTreeMap<(Kind, &str), &ComponentRef>, DiffError> {
+    let mut out = BTreeMap::new();
+    for c in &m.components {
+        if out.insert((c.kind, c.id.as_str()), c).is_some() {
+            return Err(DiffError::DuplicateComponent {
+                profile: m.profile_id.clone(),
+                kind: c.kind,
+                id: c.id.clone(),
+            });
+        }
+    }
+    Ok(out)
 }
 
 pub fn compare(a: &Manifest, b: &Manifest) -> Result<Vec<Difference>, DiffError> {
@@ -54,7 +71,7 @@ pub fn compare(a: &Manifest, b: &Manifest) -> Result<Vec<Difference>, DiffError>
         });
     }
 
-    let (ia, ib) = (index(a), index(b));
+    let (ia, ib) = (index(a)?, index(b)?);
     let mut out = Vec::new();
 
     for (key, left) in &ia {

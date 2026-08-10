@@ -51,6 +51,60 @@ fn a_witness_class_change_is_a_distinct_kind_of_difference() {
 }
 
 #[test]
+fn a_component_changed_in_both_witness_and_content_produces_two_differences() {
+    // Guards against collapsing the two independent `if`s in `compare` into
+    // an `if`/`else if`: a component that changes both its witness class and
+    // its content digest must be reported as two separate `Difference`s, not
+    // one that shadows the other.
+    let p = profile("build-manifest");
+    let a = Manifest::new(&p, vec![model("sha-256:aa", Witness::Declared)]);
+    let b = Manifest::new(&p, vec![model("sha-256:bb", Witness::Measured)]);
+    let d = compare(&a, &b).unwrap();
+    assert_eq!(d.len(), 2);
+    assert!(d
+        .iter()
+        .any(|x| matches!(x.change, Change::WitnessChanged { .. })));
+    assert!(d
+        .iter()
+        .any(|x| matches!(x.change, Change::ContentChanged { .. })));
+}
+
+#[test]
+fn a_duplicate_component_in_either_manifest_refuses_to_compare() {
+    // `Manifest::new` dedups only on full equality, so two entries that share
+    // a `(kind, id)` but disagree on `content_digest` or `witness` survive
+    // construction. Comparing such a manifest must refuse rather than
+    // silently keeping one of the two conflicting claims.
+    let p = profile("build-manifest");
+    let conflicting = Manifest::new(
+        &p,
+        vec![
+            model("sha-256:aa", Witness::Measured),
+            model("sha-256:bb", Witness::Measured),
+        ],
+    );
+    let clean = Manifest::new(&p, vec![model("sha-256:aa", Witness::Measured)]);
+
+    match compare(&conflicting, &clean) {
+        Err(DiffError::DuplicateComponent { profile, kind, id }) => {
+            assert_eq!(profile, "build-manifest");
+            assert_eq!(kind, Kind::Model);
+            assert_eq!(id, "pkg:generic/classifier@3.1.0");
+        }
+        other => panic!("expected a refusal for the left manifest, got {other:?}"),
+    }
+
+    match compare(&clean, &conflicting) {
+        Err(DiffError::DuplicateComponent { profile, kind, id }) => {
+            assert_eq!(profile, "build-manifest");
+            assert_eq!(kind, Kind::Model);
+            assert_eq!(id, "pkg:generic/classifier@3.1.0");
+        }
+        other => panic!("expected a refusal for the right manifest, got {other:?}"),
+    }
+}
+
+#[test]
 fn added_and_removed_components_are_reported() {
     let p = profile("build-manifest");
     let a = Manifest::new(&p, vec![model("sha-256:aa", Witness::Measured)]);
