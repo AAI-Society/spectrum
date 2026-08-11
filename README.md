@@ -1,4 +1,15 @@
-# spectrum
+<p align="center">
+  <img src="assets/banner.svg" alt="spectrum — a digest is a change detector, not a checkable claim" width="100%">
+</p>
+
+<p align="center">
+  <img alt="Rust 2021" src="https://img.shields.io/badge/rust-2021%20%C2%B7%201.90%2B-CFFF04?style=flat-square&labelColor=0A0A0A">
+  <img alt="76 tests passing" src="https://img.shields.io/badge/tests-76%20passing-CFFF04?style=flat-square&labelColor=0A0A0A">
+  <img alt="Apache 2.0" src="https://img.shields.io/badge/licence-Apache--2.0-CFFF04?style=flat-square&labelColor=0A0A0A">
+  <img alt="1 of 8 design forks resolved" src="https://img.shields.io/badge/design-1%20of%208%20forks%20resolved-8F8A82?style=flat-square&labelColor=0A0A0A">
+</p>
+
+---
 
 A composition commitment for agent systems, and the empirical answer to
 [P10](https://github.com/AAI-Society/poc-research-roadmap/blob/master/papers/P10-agbom.md)'s
