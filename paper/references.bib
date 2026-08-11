@@ -1,0 +1,250 @@
+% Bibliography for "A Digest Is a Change Detector, Not a Claim".
+%
+% NOTHING HERE HAS BEEN CONFIRMED AGAINST A PRIMARY SOURCE. Entries carrying a
+% `[verify]` note name the specific field that needs checking; entries without
+% one still need the usual check of author list, year and venue before
+% submission. See paper/README.md, required step 2.
+
+% ---------------------------------------------------------------- the format
+@misc{cyclonedx,
+  author       = {{OWASP Foundation}},
+  title        = {{CycloneDX} Bill of Materials Specification},
+  howpublished = {Specification, OWASP CycloneDX},
+  note         = {[verify] version number and publication date at submission
+                  time; this work reads the JSON encoding},
+  year         = {2026}
+}
+
+@misc{spdx,
+  author       = {{Linux Foundation}},
+  title        = {{SPDX} Specification},
+  howpublished = {Standardised as ISO/IEC 5962},
+  note         = {[verify] the ISO/IEC 5962 designation, its year, and the SPDX
+                  version it corresponds to},
+  year         = {2021}
+}
+
+@misc{ntiasbom,
+  author       = {{National Telecommunications and Information Administration}},
+  title        = {The Minimum Elements For a Software Bill of Materials
+                  ({SBOM})},
+  howpublished = {Report to the United States Department of Commerce},
+  note         = {[verify] exact title and publication date},
+  year         = {2021}
+}
+
+@misc{eo14028,
+  author       = {{The White House}},
+  title        = {Executive Order 14028: Improving the Nation's Cybersecurity},
+  howpublished = {Federal Register},
+  note         = {[verify] Federal Register volume and page citation},
+  year         = {2021}
+}
+
+@misc{eucra,
+  author       = {{European Parliament and Council}},
+  title        = {Regulation on Horizontal Cybersecurity Requirements for
+                  Products with Digital Elements (Cyber Resilience Act)},
+  note         = {[verify] regulation number, adoption date, and the annex that
+                  carries the bill-of-materials obligation},
+  year         = {2024}
+}
+
+% -------------------------------------------------------------- provenance
+@misc{slsa,
+  author       = {{Open Source Security Foundation}},
+  title        = {{SLSA}: Supply-chain Levels for Software Artifacts},
+  howpublished = {Specification},
+  note         = {[verify] version number at submission time},
+  year         = {2026}
+}
+
+@inproceedings{intoto,
+  author    = {Torres-Arias, Santiago and Afzali, Hammad and Kuppusamy,
+               Trishank Karthik and Curtmola, Reza and Cappos, Justin},
+  title     = {in-toto: Providing Farm-to-Table Guarantees for Bits and Bytes},
+  booktitle = {Proceedings of the 28th USENIX Security Symposium},
+  year      = {2019},
+  note      = {[verify] page range}
+}
+
+@article{thompson1984,
+  author  = {Thompson, Ken},
+  title   = {Reflections on Trusting Trust},
+  journal = {Communications of the ACM},
+  volume  = {27},
+  number  = {8},
+  pages   = {761--763},
+  year    = {1984},
+  doi     = {10.1145/358198.358210}
+}
+
+@inproceedings{ohm2020,
+  author    = {Ohm, Marc and Plate, Henrik and Sykosch, Arnold and Meier,
+               Michael},
+  title     = {Backstabber's Knife Collection: A Review of Open Source Software
+               Supply Chain Attacks},
+  booktitle = {Detection of Intrusions and Malware, and Vulnerability
+               Assessment (DIMVA)},
+  year      = {2020},
+  note      = {[verify] page range and publisher series}
+}
+
+% ------------------------------------------------- commitments and hashing
+@inproceedings{merkle1980,
+  author    = {Merkle, Ralph C.},
+  title     = {Protocols for Public Key Cryptosystems},
+  booktitle = {Proceedings of the 1980 IEEE Symposium on Security and Privacy},
+  pages     = {122--134},
+  year      = {1980},
+  note      = {[verify] page range}
+}
+
+@techreport{rfc6962,
+  author      = {Laurie, Ben and Langley, Adam and K{\"a}sper, Emilia},
+  title       = {Certificate Transparency},
+  institution = {Internet Engineering Task Force},
+  type        = {RFC},
+  number      = {6962},
+  year        = {2013}
+}
+
+@techreport{rfc8785,
+  author      = {Rundgren, Anders and Jordan, Bret and Erdtman, Samuel},
+  title       = {{JSON} Canonicalization Scheme ({JCS})},
+  institution = {Internet Engineering Task Force},
+  type        = {RFC},
+  number      = {8785},
+  year        = {2020}
+}
+
+@techreport{rfc8259,
+  author      = {Bray, Tim},
+  title       = {The JavaScript Object Notation ({JSON}) Data Interchange
+                 Format},
+  institution = {Internet Engineering Task Force},
+  type        = {STD 90, RFC},
+  number      = {8259},
+  year        = {2017}
+}
+
+@techreport{rfc7493,
+  author      = {Bray, Tim},
+  title       = {The {I-JSON} Message Format},
+  institution = {Internet Engineering Task Force},
+  type        = {RFC},
+  number      = {7493},
+  year        = {2015}
+}
+
+@techreport{rfc9334,
+  author      = {Birkholz, Henk and Thaler, Dave and Richardson, Michael and
+                 Smith, Ned and Pan, Wei},
+  title       = {Remote {ATtestation} procedureS ({RATS}) Architecture},
+  institution = {Internet Engineering Task Force},
+  type        = {RFC},
+  number      = {9334},
+  year        = {2023}
+}
+
+@misc{tpm2,
+  author       = {{Trusted Computing Group}},
+  title        = {{TPM} 2.0 Library Specification},
+  howpublished = {Specification},
+  note         = {[verify] revision and part number for the PCR extend
+                  operation cited in Section 4},
+  year         = {2019}
+}
+
+% ------------------------------------------------------------ agent systems
+@misc{mcp,
+  author       = {{Anthropic}},
+  title        = {Model Context Protocol Specification},
+  howpublished = {Specification},
+  note         = {[verify] revision date at submission time; this work models
+                  the tool-list surface only and implements no transport},
+  year         = {2026}
+}
+
+@inproceedings{greshake2023,
+  author    = {Greshake, Kai and Abdelnabi, Sahar and Mishra, Shailesh and
+               Endres, Christoph and Holz, Thorsten and Fritz, Mario},
+  title     = {Not What You've Signed Up For: Compromising Real-World
+               {LLM}-Integrated Applications with Indirect Prompt Injection},
+  booktitle = {Proceedings of the 16th ACM Workshop on Artificial Intelligence
+               and Security (AISec)},
+  year      = {2023},
+  note      = {[verify] page range}
+}
+
+@misc{owaspllm,
+  author       = {{OWASP Foundation}},
+  title        = {{OWASP} Top 10 for Large Language Model Applications},
+  howpublished = {Community standard},
+  note         = {[verify] edition year and the item numbers cited in
+                  Section 2},
+  year         = {2025}
+}
+
+% ------------------------------------------- the initiative and its siblings
+@misc{pocspec,
+  author       = {{Advanced AI Society, Proof-of-Control Initiative}},
+  title        = {Proof-of-Control: An Open Standard for Runtime Verifiability
+                  and Cryptographic Oversight in Autonomous AI Execution},
+  howpublished = {Working draft},
+  note         = {[verify] repository URL and version at submission time},
+  year         = {2026}
+}
+
+@misc{p10,
+  author       = {{Advanced AI Society, Proof-of-Control Initiative}},
+  title        = {{P10}: The Agent Bill of Materials},
+  howpublished = {Research roadmap paper, working draft},
+  note         = {[verify] repository URL and revision; this work answers the
+                  question P10 poses and resolves none of its forks by fiat},
+  year         = {2026}
+}
+
+@misc{spectrumtool,
+  author       = {Schwoebel, Jim},
+  title        = {\texttt{spectrum}: A Composition Commitment for Agent Systems},
+  howpublished = {Apache-2.0 licensed software},
+  note         = {[verify] public repository URL at submission time},
+  year         = {2026}
+}
+
+@misc{transittool,
+  author       = {Schwoebel, Jim},
+  title        = {\texttt{transit}: Canonicalization and Signing for Agent
+                  Decision Records},
+  howpublished = {Apache-2.0 licensed software},
+  note         = {[verify] public repository URL at submission time; this work
+                  depends on its \texttt{jcs} and \texttt{json} modules},
+  year         = {2026}
+}
+
+@misc{ephemeristool,
+  author       = {Schwoebel, Jim},
+  title        = {\texttt{ephemeris}: Custody and Durability for a
+                  Tamper-Evident Log},
+  howpublished = {Apache-2.0 licensed software},
+  note         = {[verify] public repository URL at submission time},
+  year         = {2026}
+}
+
+@misc{parallaxtool,
+  author       = {Schwoebel, Jim},
+  title        = {\texttt{parallax}: Computing the Residual Trust Set of an
+                  Attestation Deployment},
+  howpublished = {Apache-2.0 licensed software},
+  note         = {[verify] public repository URL at submission time},
+  year         = {2026}
+}
+
+@misc{occultationtool,
+  author       = {Schwoebel, Jim},
+  title        = {\texttt{occultation}: What Unlinkability Costs Per Action},
+  howpublished = {Apache-2.0 licensed software},
+  note         = {[verify] public repository URL at submission time},
+  year         = {2026}
+}

@@ -1,0 +1,1040 @@
+% A Digest Is a Change Detector, Not a Claim — arXiv preprint
+% Build: tectonic main.tex  (XeTeX engine; fetches packages automatically)
+% STATUS: working draft circulated for co-author review and consent prior to submission.
+%
+% NOTE ON THE PREAMBLE. This mirrors ../../ephemeris/paper/main.tex, which in
+% turn mirrors transit's and the standard's. `minted` is not loaded: it shells
+% out to pygments, which would make the CI paper build depend on a Python
+% package nobody installs there. `listings` needs no external tool.
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{tikz}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath, amssymb}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{microtype}
+% Long test names such as `a_static_deployment_never_advances_its_register`
+% are unbreakable in \texttt and overflow the measure; htt lets them hyphenate.
+\usepackage[htt]{hyphenat}
+\usepackage{caption}
+\usepackage{siunitx}
+\usepackage{amsthm}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\usepackage[section]{placeins}
+
+% Advanced AI Society brand palette
+\definecolor{aailime}{HTML}{CFFF04}
+\definecolor{aailimetint}{HTML}{F2FFB8}
+\definecolor{aaiink}{HTML}{0A0A0A}
+\definecolor{aaired}{HTML}{FFE3E4}
+\definecolor{aaineutral}{HTML}{E7E3DD}
+\definecolor{aaipaper}{HTML}{F0EDEA}
+\definecolor{aaimuted}{HTML}{8F8A82}
+\definecolor{aaidarklime}{HTML}{7A9900}
+\definecolor{codepanel}{HTML}{F7F5F1}
+
+% Ragged-right paragraph column; justified narrow columns underfill badly.
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\lstset{basicstyle=\ttfamily\footnotesize, breaklines=true, frame=single,
+        framerule=0.3pt, xleftmargin=1em, columns=fullflexible}
+\captionsetup{font=small, labelfont=bf}
+
+\newcommand{\spectrum}{\texttt{spectrum}}
+\newcommand{\transit}{\texttt{transit}}
+\newcommand{\ephemeris}{\texttt{ephemeris}}
+\newcommand{\parallax}{\texttt{parallax}}
+
+% The Society's bracket mark, drawn natively (lime on the dark band)
+\newcommand{\aaimark}[1]{%
+\begin{tikzpicture}[x=#1, y=#1, line cap=butt]
+  \fill[aailime] (0,0) rectangle (0.16,1);
+  \fill[aailime] (0.16,0) rectangle (0.42,0.24);
+  \fill[aailime] (0.16,0.76) rectangle (0.42,1);
+  \fill[aailime] (1.04,0) rectangle (1.20,1);
+  \fill[aailime] (0.78,0) rectangle (1.04,0.24);
+  \fill[aailime] (0.78,0.76) rectangle (1.04,1);
+\end{tikzpicture}}
+
+\begin{document}
+
+% ---------------------------------------------------------------- cover page
+\thispagestyle{empty}
+
+\begin{tikzpicture}[remember picture, overlay]
+  \fill[aaiink] (current page.north west) rectangle
+    ([yshift=-6.35cm]current page.north east);
+  \fill[aailime] ([yshift=-6.35cm]current page.north west) rectangle
+    ([yshift=-6.53cm]current page.north east);
+  \node[anchor=north west, inner sep=0pt]
+    at ([xshift=1in, yshift=-0.95cm]current page.north west) {\aaimark{0.62cm}};
+  \node[anchor=north west, inner sep=0pt, text width=14.2cm]
+    at ([xshift=1in+1.15cm, yshift=-0.98cm]current page.north west)
+    {\sffamily\bfseries\footnotesize\color{aailime}%
+     ADVANCED AI SOCIETY\; \textcolor{aaimuted}{$\cdot$}\; PROOF-OF-CONTROL
+     INITIATIVE\\[3pt]
+     {\normalfont\sffamily\footnotesize\color{aaimuted}
+      Working draft v0.1 $\cdot$ August 2026 $\cdot$ for co-author review
+      prior to submission}};
+  \node[anchor=north west, inner sep=0pt, text width=\textwidth]
+    at ([xshift=1in, yshift=-2.55cm]current page.north west)
+    {\sffamily\bfseries\fontsize{21.5}{26}\selectfont\color{aaipaper}%
+     A Digest Is a Change Detector, Not a Claim: Composition Commitments
+     for Agent Systems, and the Attack Class They Cannot See};
+  \node[anchor=north west, inner sep=0pt, text width=\textwidth]
+    at ([xshift=1in, yshift=-5.55cm]current page.north west)
+    {\sffamily\small\color{aaipaper}%
+     \textcolor{aailime}{\rule[0.5ex]{1.6em}{2pt}}\hspace{0.6em}%
+     Composition is a theory. You have to state it before you can hash it.};
+\end{tikzpicture}
+
+\vspace*{5.9cm}
+
+% Compact author block
+{\small\noindent
+\textbf{Jim Schwoebel}\textsuperscript{1,2}
+
+\smallskip\noindent
+{\footnotesize
+\textsuperscript{1}\,Quome \quad
+\textsuperscript{2}\,Advanced AI Society, \url{https://advancedaisociety.org}\footnote{Prepared
+within the Proof-of-Control Initiative of the Advanced AI Society. Authorship is
+limited to contributors to this manuscript. Co-authors will be added only upon
+explicit consent and substantive contribution; the author list is deliberately
+short at this stage rather than inherited from a sibling paper.}}}
+
+\vspace{0.9em}
+\noindent\textcolor{aailime}{\rule{\textwidth}{1.6pt}}
+\vspace{0.2em}
+
+\begin{center}
+{\sffamily\bfseries\small ABSTRACT}
+\end{center}
+\vspace{-0.5em}
+\noindent{\small
+A Software Bill of Materials says what a system is made of. Applied to an
+agent, it runs into two problems at once. The first is timing: an agent's
+composition changes after the bill is taken. A tool server can present one
+schema when an operator reviews it and a wider one when the agent calls it,
+and a manifest taken at task start is byte-identical across that substitution
+--- so the document that was supposed to detect component swaps is provably
+blind to the component swap that matters most. The second is worse, because it
+is not a bug: nobody has agreed what belongs on the bill. Any tool that ships
+a default schema settles an open research question by configuration file, and
+the settlement is invisible to whoever reads its output.
+We built \spectrum, which refuses to do that. It defines no Agent Bill of
+Materials. It defines a digest over a \emph{declared} component set, ships
+three such sets as named falsifiable hypotheses, requires that every one of
+them state what it cannot capture, and refuses to compare digests taken under
+different hypotheses. On top of the static manifest it keeps a PCR-style
+running commitment over composition changes, which holds 32 bytes however much
+composition moves. A detection harness then runs real substitutions against
+all three hypotheses. The tool-definition rug-pull is detected under the two
+runtime hypotheses and invisible under the build-time one. Content poisoning
+is detected under none of them, and we assert that negative in the test suite
+on purpose. We also report the uncomfortable half: on the content row the
+harness cannot fail, because \texttt{Detected} is unreachable outside the
+tool-measurement branch by construction of the predicate. That row is a worked
+consequence of the design, not an experiment. Locally, re-measuring a tool
+list costs \SI{6.2}{\micro\second} at 8 tools and \SI{177}{\micro\second} at
+256, linear at roughly \SI{0.7}{\micro\second} per tool --- around a hundredth
+of the standard's per-action budget at realistic sizes, and \emph{not} an
+answer to whether re-measurement is affordable, because the network round trip
+that dominates it is not measured here. Our conclusion for the Agent Bill of
+Materials is narrower than ``inventory'' and more useful than ``security
+control'': a running composition commitment is a change-detection control over
+the capability surface and an inventory control over content.}
+
+\vspace{0.6em}
+\noindent\textcolor{aaimuted}{\rule{\textwidth}{0.6pt}}
+
+\vspace{0.4em}
+\noindent{\footnotesize\textbf{Artefact.} All figures in
+Section~\ref{sec:cost} come from \texttt{spectrum bench-mcp} on one host, and
+every detection outcome in Section~\ref{sec:works} is real output from
+\texttt{spectrum detect}. The implementation is Apache-2.0
+\cite{spectrumtool}. Nothing in this paper was produced by a deployment: there
+is no fleet, no network, and no operator but us.}
+
+\vspace{1.4em}
+
+% ---------------------------------------------------------------- the paper
+\section{The Problem}
+\label{sec:problem}
+
+An operator is asked to approve a tool. The approval screen shows a payments
+server offering one function:
+
+\begin{lstlisting}
+{"tools":[{"name":"charge",
+           "parameters":{"amount":"number","currency":"string"}}]}
+\end{lstlisting}
+
+\noindent
+They read it. Charging an amount in a currency is what a payments tool should
+do, and there is nowhere in that schema to put a destination, so the money can
+only go where the application already decided it goes. They approve it. The
+system takes a bill of materials --- model, system prompt, tool definitions,
+dependency tree --- hashes it, and files the hash with the task record.
+
+The agent runs. At the moment it actually calls the tool, the server returns
+this instead:
+
+\begin{lstlisting}
+{"tools":[{"name":"charge",
+           "parameters":{"amount":"number","currency":"string",
+                         "destination":"string"}}]}
+\end{lstlisting}
+
+\noindent
+There is now somewhere to put a destination, and the model --- helpful,
+schema-following, doing exactly what it was built to do --- can be talked into
+putting one there.
+
+Now ask what the bill of materials says about this. It says nothing. Not
+``suspicious,'' not ``unverified.'' It produces the same hash it produced
+before, because it was taken at task start and the tool list it hashed was the
+one presented at task start. The artefact whose entire purpose is to detect a
+substituted component is, against this substitution, a constant function.
+
+I want to be careful about what is and is not surprising, because there is a
+reading on which this is trivial. Of course a snapshot does not capture a
+later change. Snapshots do not do that. Everybody nods.
+
+The nodding does not survive contact with a deployment. What you get in
+practice is a pipeline that emits an SBOM at build time, a policy that
+requires one, an auditor who checks that it was emitted and that its digest
+matches the one on file, and a green tick. Every step is real work. The green
+tick means ``the components we recorded at task start are the components we
+recorded at task start,'' and it is read as ``the agent ran with the
+components you approved.'' The gap is not in anybody's understanding of
+hashing. It is in the distance between what the artefact commits to and what
+its presence is taken to mean.
+
+\subsection{The second problem, which is the harder one}
+
+Suppose we fix that by re-measuring at call time. Then a different question
+arrives immediately, and it has no technical answer: re-measure \emph{what}?
+
+A conventional SBOM has a settled answer. A program is made of files and
+libraries; you enumerate them. An agent is made of --- and here the sentence
+stops. A model, certainly, though ``the model'' behind a hosted API endpoint
+is a name and a version string and not something you can hash. A system
+prompt. Tool definitions. The dependency tree of the harness. Also, arguably:
+the documents the retriever pulled into the context this turn, the memories it
+read, the sub-agents it spawned, the tool list each remote server returned at
+each call. Also, if you are being ambitious: which of those retrieved
+documents actually influenced the decision.
+
+That list is not a specification. It is a set of positions, and reasonable
+people hold different ones. Including retrieved chunks makes the bill enormous
+and turns every content digest into a cross-session fingerprint of what the
+agent read. Excluding them means the bill says nothing about the entire class
+of attacks that work by feeding an agent a document. There is no neutral
+choice, and there is certainly no choice that a tool should make silently on
+its user's behalf.
+
+This is the position P10 of the Proof-of-Control research roadmap is in
+\cite{p10}: it asks whether an Agent Bill of Materials can be a running,
+verifiable commitment, and whether that catches anything a static one does
+not. It is an open question, marked open. And the fastest way to make an open
+question look closed is to ship a tool with a default.
+
+\begin{quote}
+A tool that ships a default component set answers a research question by
+configuration file, and the answer is invisible in the output. Every digest it
+prints looks like a fact about a system. It is a fact about a system
+\emph{under a theory of composition the reader was never shown}.
+\end{quote}
+
+So \spectrum{} has no default profile. \texttt{--profile} is required on every
+command that composes a manifest. There is no invocation of this tool that can
+produce an unmarked ``the AgBOM,'' and that is a deliberate ergonomic cost
+paid to keep a research question from being settled by a default value.
+
+\subsection{What this paper claims}
+
+Three things, in decreasing order of confidence.
+
+First, that the timing problem is real and mechanically demonstrable, and that
+its fix --- a running commitment extended at composition-change points ---
+catches the tool-substitution class. We demonstrate this against a hostile
+server that performs the substitution, under three profiles, and report which
+ones catch it.
+
+Second, that the fix does \emph{not} extend to content. A poisoned document
+that is validly sourced, correctly digested and faithfully recorded moves the
+register exactly as a benign one does. The commitment records that the chunk
+arrived. It says nothing about whether the chunk was adversarial, and nothing
+about whether it steered the decision. We assert this negative in the test
+suite so that no future change can make it quietly pass.
+
+Third, and most tentatively, that the honest summary for P10 is: \emph{a
+running composition commitment is a change-detection control over the
+capability surface, and an inventory control over content.} That moves the
+threat model on tool-and-plugin substitution and does not move it on the
+memory- and context-poisoning rows.
+
+\section{What Others Have Built}
+\label{sec:related}
+
+Nearly every mechanism in this paper is borrowed, and the borrowing is the
+point: the contribution is not a new digest construction.
+
+\paragraph{Bills of materials.} CycloneDX \cite{cyclonedx} and SPDX
+\cite{spdx} are the two formats in use, the second standardised as ISO/IEC
+5962. The NTIA minimum-elements report \cite{ntiasbom} is what most
+procurement language actually points at, and US Executive Order 14028
+\cite{eo14028} and the EU Cyber Resilience Act \cite{eucra} are why anybody is
+required to produce one. This work reads CycloneDX and does not read SPDX,
+which is a choice we defend badly in Section~\ref{sec:unknown}. All of these
+formats describe a build. None of them has a concept of a component that
+changes identity between two calls within one execution, because for the
+software they were designed for, no such component exists.
+
+\paragraph{Provenance for builds.} SLSA \cite{slsa} and in-toto
+\cite{intoto} secure the path from source to artefact: who built what, from
+which inputs, on which machine. The threat they address is the substituted
+build step, and Thompson's compiler \cite{thompson1984} is the ancestor of
+the whole line. Ohm and colleagues catalogued what supply-chain attacks
+actually look like in package ecosystems \cite{ohm2020}. Our attacker is
+adjacent but not the same: they do not compromise the build, they change what
+a remote endpoint returns \emph{after} the build was attested and after a
+human approved it.
+
+\paragraph{Running commitments.} The register in Section~\ref{sec:precise} is
+a TPM Platform Configuration Register with the hardware removed
+\cite{tpm2}. Extend-only, fixed width, order-dependent, no setter. The idea
+that you can summarise an unbounded sequence of measurements in 32 bytes and
+lose nothing except the ability to reconstruct them is thirty years old, and
+we use it unmodified. Merkle's hash tree \cite{merkle1980} and Certificate
+Transparency \cite{rfc6962} are the other half of that tradition; the
+sibling tool \ephemeris{} \cite{ephemeristool} is where they live in this
+programme, and Section~\ref{sec:precise} explains why a register without a log
+is only half of a verification story.
+
+\paragraph{Canonicalisation.} Comparing two JSON documents for identity is a
+solved problem with an unusually large number of ways to get it wrong. We use
+RFC~8785 JCS \cite{rfc8785}, through \transit's implementation
+\cite{transittool} rather than a second one of our own, over strictly parsed
+JSON \cite{rfc8259,rfc7493}. A server that reformats its JSON must not read
+as a composition change; a server that sends duplicate keys must be refused
+rather than silently resolved to whichever key a decoder prefers.
+
+\paragraph{Evidence classes.} The RATS architecture \cite{rfc9334} separates
+attester, verifier and relying party, and insists that a claim's weight
+depends on who is vouching for it. Our witness class is a coarse version of
+that idea pushed inside the digest: a component an operator typed and a
+component whose bytes we hashed must not render identically. \parallax{}
+\cite{parallaxtool} is the sibling tool that works out what such a
+distinction is worth across a whole deployment.
+
+\paragraph{Agent-specific attacks.} Greshake and colleagues demonstrated
+indirect prompt injection \cite{greshake2023}: content that enters a model's
+context and redirects it. The OWASP LLM list \cite{owaspllm} has since
+catalogued the family. This literature is why Section~\ref{sec:works}'s
+negative result matters. The attack that most concerns practitioners is
+delivered as \emph{content}, and content is exactly the axis on which a
+composition commitment degenerates into an inventory.
+
+\paragraph{Where we differ.} The work above mostly asks how to build the
+artefact correctly. We are asking what a correctly built artefact is worth
+when the thing it describes changes underneath it, and --- separately --- what
+a tool should do when the community has not decided what the artefact should
+contain. Our answer to the second is the profile: ship the disagreement as
+named, comparable, individually falsifiable hypotheses, and refuse to rank
+them.
+
+\section{Writing It Down Precisely}
+\label{sec:precise}
+
+The symbols will not make anything truer than the English already did. They
+are here because several of the properties below are easy to state loosely and
+then implement in a way that looks right, and because the failure modes we
+care about live in details --- concatenation order, length prefixing, which
+fields enter a hash --- that prose glosses over.
+
+\begin{definition}[Profile]
+A profile is a triple $P = (\mathrm{id}, K, C)$ where $\mathrm{id}$ is a
+stable name, $K \subseteq \mathcal{K}$ is a set of component kinds drawn from
+a closed enumeration $\mathcal{K}$, and $C$ is a non-empty set of
+natural-language statements of what this theory of composition does not
+capture. A profile with $C = \emptyset$ does not load.
+\end{definition}
+
+That last clause is the one doing work. It is not possible to express, in this
+tool's configuration language, the proposition ``this profile captures
+everything.'' The check is four lines long and it is the most opinionated code
+in the repository.
+
+\begin{definition}[Component reference]
+A component reference is $c = (k, \mathrm{id}, d, w)$ with $k \in
+\mathcal{K}$, $\mathrm{id}$ a package URL where one exists and a stable local
+name otherwise, $d$ an optional tagged content digest, and $w \in
+\{\textsc{Measured}, \textsc{Attested}, \textsc{Declared}, \textsc{Opaque}\}$
+the witness class --- how we know what we are claiming.
+\end{definition}
+
+\textsc{Opaque} is a positive statement: a component of this kind is present
+and cannot be named. It is never the result of a failure. That distinction
+matters because the alternative --- letting an unmeasurable component fall out
+of the manifest --- makes ``we could not measure the training data'' and
+``there is no training data'' render identically.
+
+\begin{definition}[Component digest]
+\[
+  H_c(c) = \mathrm{SHA\text{-}256}\big(\texttt{"spectrum-component-v1"}
+  \;\|\; \mathrm{len}(J) \;\|\; J \big)
+\]
+where $J$ is the JCS canonicalisation of the object
+$\{\texttt{kind}: k, \texttt{id}, \texttt{content\_digest}: d,
+\texttt{witness}: w\}$ and $\mathrm{len}$ is a 64-bit big-endian length.
+\end{definition}
+
+Three details are load-bearing. The absent digest is rendered as an explicit
+\texttt{null} rather than omitted, so ``we have no digest'' and ``we did not
+mention a digest'' cannot collide. The witness class is \emph{inside} the
+digest, which is one of P10's open forks and which we resolve in the direction
+the design recommends --- at a real cost, discussed in
+Section~\ref{sec:unknown}. And the domain tag is hashed \emph{before} the
+canonical bytes rather than carried as a key inside the JSON object, so it can
+never be shadowed by a future field that happens to be named the same thing. A
+tag inside the JCS input is just another field, and another field is precisely
+what it must be distinguishable from.
+
+\begin{definition}[Manifest and its digest]
+A manifest $M = (P.\mathrm{id}, S)$ carries a sorted, deduplicated sequence
+$S = \langle c_1, \ldots, c_n\rangle$. Its digest is
+\[
+  H_M(M) = \mathrm{SHA\text{-}256}\big(\texttt{"spectrum-manifest-v1"} \;\|\;
+  \mathrm{len}(P.\mathrm{id}) \;\|\; P.\mathrm{id} \;\|\; n \;\|\;
+  \mathrm{len}(H_c(c_1)) \| H_c(c_1) \;\|\; \cdots \big).
+\]
+\end{definition}
+
+The profile id is inside the digest. This is what makes a digest a commitment
+\emph{under a stated theory of composition} rather than a fact about a system,
+and it is why \texttt{diff} refuses to compare two manifests taken under
+different profiles: a difference between two theories is not a difference
+between two systems. Each component digest is length-prefixed, so a set of two
+components cannot be made to hash like one component whose identifier happens
+to contain the concatenation of their digests.
+
+\begin{proposition}[The sorting invariant is not cosmetic]
+\label{prop:sort}
+Let $\mathrm{cmp}$ be the order-insensitive comparison used by \texttt{diff},
+which indexes components by $(k, \mathrm{id})$. If a caller could append to
+$S$ after construction, there would exist manifests $M_1, M_2$ over the same
+component set with $\mathrm{cmp}(M_1, M_2) = \emptyset$ and $H_M(M_1) \neq
+H_M(M_2)$.
+\end{proposition}
+
+\noindent
+That is a producer and a verifier inside one library reaching opposite
+conclusions about the same pair of manifests. The remedy is structural rather
+than documentary: both fields of the manifest type are private, sorting and
+deduplication happen in the only constructor, and there is deliberately no
+\texttt{push}, no \texttt{components\_mut}, and no conversion from a bare
+vector. The invariant holds by construction rather than by promise.
+
+\begin{definition}[Composition register]
+\begin{align*}
+  C_0 &= \mathrm{SHA\text{-}256}\big(\texttt{"spectrum-register-v1"} \;\|\;
+        \mathrm{len}(P.\mathrm{id}) \| P.\mathrm{id} \;\|\;
+        \mathrm{len}(H_M) \| H_M \big) \\
+  C_n &= \mathrm{SHA\text{-}256}\big(C_{n-1} \;\|\; H_e(e_n)\big)
+\end{align*}
+where $H_e$ is a domain-tagged digest over an event's kind, its interception
+hook, and the digest of the component that moved.
+\end{definition}
+
+The register is 32 bytes regardless of how much composition has moved, which
+is what makes a per-step field affordable. The hook is inside the event
+digest, because the same component arriving at context assembly and at memory
+write are different composition changes.
+
+\begin{proposition}[One-way by construction]
+There is no sequence of public operations returning a register to a previous
+value other than by preimage.
+\end{proposition}
+
+\noindent
+The inner value is private, there is no setter, no \texttt{reset}, and no
+constructor other than $C_0$. This is worth stating as a property because the
+convenience method that would violate it --- ``reset composition for a new
+task'' --- is one an implementer would reach for without noticing that it is a
+rewrite of history.
+
+\subsection{What the register does not do}
+\label{sec:register-honest}
+
+It solves the record-size problem completely and the verification problem not
+at all.
+
+To check a register you need its events, and this tool does not store them.
+Replaying a truncated log does not reproduce the register --- which is the
+property that makes the construction worth anything --- but noticing that
+requires having the log. So the honest statement of what \spectrum{} provides
+is: a 32-byte value that changes when composition changes, and a
+demonstration that it changes for the right reasons, with the storage and
+custody of the event log left to \ephemeris{} \cite{ephemeristool}, whose own
+paper explains why that custody is the hard part.
+
+There is a further limitation that is easy to miss and that we state plainly
+because it undercuts the natural reading of the whole construction:
+\emph{nothing verifies a digest.} No infrastructure in this programme
+publishes expected AgBOMs anywhere. There is no registry, no
+transparency log of composition roots, nothing to check a value against. What
+the library offers is \texttt{diff} against a prior digest of the same
+deployment. A digest here is a change detector between two records of the same
+system --- not a checkable claim about one record in isolation. Every
+sentence in this paper about ``detection'' should be read against that.
+
+\section{Three Hypotheses, Not One Answer}
+\label{sec:profiles}
+
+The tool ships three profiles. They are not a menu of configurations for
+different users; they are three positions on P10's open question, written down
+in a form that can be run against an attack and shown to be wrong.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}L{2.9cm}L{4.2cm}L{3.3cm}L{4.2cm}@{}}
+\toprule
+\textbf{Profile} & \textbf{Includes} & \textbf{The claim} &
+\textbf{What it cannot capture} \\
+\midrule
+\texttt{build-manifest} &
+model, system prompt, tool definitions, code and dependency SBOM &
+composition is fixed at task start &
+everything that changes after \\
+\addlinespace
+\texttt{runtime-tools} &
+the above, plus MCP tool-list re-measurement and the sub-agent roster &
+the capability surface changes at runtime and is small enough to re-measure &
+retrieved context, memory, whether a component is adversarial \\
+\addlinespace
+\texttt{runtime-\hspace{0pt}with-context} &
+the above, plus retrieved-chunk and memory-read references &
+everything entering the context is part of composition &
+which of it mattered --- and it costs a linkability leak \\
+\bottomrule
+\end{tabular}
+\caption{The three shipped profiles. The right-hand column is not commentary:
+it is a required, non-empty field of the profile file, and a profile that
+omits it fails to load.}
+\label{tab:profiles}
+\end{table}
+
+\texttt{build-manifest} exists to reproduce the behaviour of what is deployed
+today. It is shipped so that the cost and the detection power of the other two
+are measured \emph{against} it rather than asserted over it, and it is
+deliberately not named \texttt{default}: it is not the default answer, it is
+the current one, and this tool exists partly to show what it misses.
+
+The profile mechanism has one more consequence worth drawing out. Because the
+profile id is inside every digest, two deployments running under different
+profiles produce digests that are not comparable, and the library refuses to
+compare them rather than reporting a difference. An operator who upgrades from
+\texttt{build-manifest} to \texttt{runtime-tools} does not see ``composition
+changed.'' They see a refusal, with a message explaining that they changed
+theories. We think this is the correct behaviour and we note that it is
+annoying, which is usually a sign that a tool is telling the truth about
+something.
+
+\subsection{What a profile still does not tell you}
+
+A profile's coverage list states what the \emph{theory} excludes. It does not
+state what the \emph{plumbing} dropped. CycloneDX defines component types ---
+\texttt{container}, \texttt{operating-system}, \texttt{firmware},
+\texttt{device}, \texttt{platform} --- that this projection has no kind for,
+and those are discarded before the profile is ever consulted. No shipped
+profile's coverage mentions them, so nothing in a profile tells an operator
+that a container in their document did not reach the digest.
+
+We treat this as a real gap and mitigate it at the point of use rather than
+pretending it is covered: \texttt{compose} counts the unmapped types and
+prints them under the digest, so a dropped type is visible on the run that
+dropped it rather than inferred from a list it is not on.
+
+\begin{lstlisting}
+profile   build-manifest
+components 1
+digest    sha-256:ee76701fa13e35df0ea03f6cc304f54ca3313eb6e04cc6dc3f5e0de531cedc45
+
+DECLARED BUT ABSENT - this profile includes these kinds and no
+component of them was collected, so the digest above says nothing
+about them. They are missing, not empty:
+  - system_prompt
+  - tool_definition
+  - code_dependency
+
+UNMAPPED CycloneDX TYPES - present in the document, no kind to
+project them onto, dropped before the profile was consulted:
+  - container (2)
+  - firmware (1)
+  - operating-system (1)
+\end{lstlisting}
+
+The ``declared but absent'' block is the same discipline applied to a
+different gap. Four of the eight kinds have no collector in this build, so a
+profile that declares them will routinely produce a digest that commits to
+none of them. The design's fail-loud table asks \texttt{compose} to refuse in
+that situation. It warns instead, because refusing would make the command
+unusable until collectors that are several build steps away exist. That is a
+compromise and we record it as one: the digest still prints, and it never
+prints alone.
+
+\section{Does It Actually Work?}
+\label{sec:works}
+
+\subsection{The harness}
+
+\texttt{spectrum detect --scenario <name>} runs one attack against every
+shipped profile and reports, per profile, whether that profile's commitment
+moved and which component moved it. The exit code is 0 if any profile detected
+the attack and 1 if none did.
+
+The hostile server is a pure function of a scenario and a call count, so every
+detection test runs with no socket, no network and no credentials. Call 0 is
+the operator's review; every later call is a real invocation. That split is
+the whole attack. There is also a real HTTP transport over the same function
+for a human to poke at by hand, and nothing in the automated suite touches it.
+
+``Detected'' has a precise and narrow meaning here, and we would rather state
+it three times than have it read as something grander: \emph{the register
+value after the attack differs from the value a verifier would expect, and the
+event log names which component moved.} It does not mean the attack was
+prevented. It does not mean anything was judged malicious. Nothing in this
+tool blocks anything.
+
+\subsection{The matrix}
+
+Table~\ref{tab:detect} is real output, reformatted. Every cell was produced by
+running the command named in Section~\ref{sec:works}.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Scenario} & \texttt{build-manifest} & \texttt{runtime-tools} &
+\texttt{runtime-with-context} \\
+\midrule
+\texttt{none} (control) & not detected & not detected & not detected \\
+\texttt{tool-rug-pull} & not detected &
+\cellcolor{aailimetint}\textsc{detected} &
+\cellcolor{aailimetint}\textsc{detected} \\
+\texttt{added-tool} & not detected &
+\cellcolor{aailimetint}\textsc{detected} &
+\cellcolor{aailimetint}\textsc{detected} \\
+\texttt{content-poisoning} & not detected & not detected & not detected \\
+\bottomrule
+\end{tabular}
+\caption{Detection outcomes. Detected cells name the component that moved
+(\texttt{mcp://payments}). The first row is the negative control and the last
+row is the finding.}
+\label{tab:detect}
+\end{table}
+
+Three things to read off it.
+
+\paragraph{The control is honest.} With no attack, nothing is detected under
+any profile. This row exists because a harness that reports detection when
+nothing happened would make every other row worthless, and a suite without
+this row cannot tell the difference between a working detector and a stuck
+one.
+
+\paragraph{The rug-pull is caught, and by the profile you would predict.}
+Under \texttt{build-manifest} the digest before and after the substitution is
+identical, because the manifest was taken once. Under \texttt{runtime-tools}
+the register diverges at the call and the event names
+\texttt{mcp://payments}. This is detectable for reasons that do not
+generalise: a tool definition is small, local, re-readable on demand, and has
+an expected value that a human approved. Every one of those properties is load
+bearing, and content has none of them.
+
+\paragraph{Content poisoning is caught by nothing.} A document that is validly
+sourced, correctly digested, faithfully recorded and malicious moves the
+register exactly as a benign document does. Under
+\texttt{runtime-with-context} the register \emph{does} change --- the chunk
+entered the context and the commitment records that it did --- and the
+scenario still reports not detected, because a change that a verifier has no
+expected value for is a record of arrival, not a detection.
+
+\subsection{What the harness proves, and what it only re-states}
+\label{sec:harness-honest}
+
+This is the part of the evaluation we would most like to overstate, so we will
+state it against ourselves.
+
+On the content row, the harness could not have come out the other way. In the
+detection routine, the \texttt{Detected} outcome is reachable only when a
+``moved'' variable is set, and that variable is assigned only inside the
+branch guarded by \emph{does this profile include MCP servers}. A content
+attack therefore cannot reach \texttt{Detected} by construction of the
+predicate, whatever the profile says and whatever the register does.
+
+That is deliberate, and the code's own documentation gives the reason: a
+verifier has no expected value for a chunk retrieved at runtime, so a register
+that moved because a chunk arrived is a record of arrival and not a detection.
+We think the negative is correct and the argument for it is sound. But the
+harness \emph{executes} that argument against real profiles and real
+substitutions; it does not independently discover it. The content row of
+Table~\ref{tab:detect} is a worked consequence of the design, not an
+experiment that could have falsified it.
+
+We are labouring this because the table looks like an experiment, tables
+generally are experiments, and a reader skimming for results would take that
+row as an empirical finding about composition commitments in general. It is
+not. It is a demonstration that our implementation behaves the way our
+argument says it should, which is worth having and is a strictly weaker thing.
+
+The rows that \emph{could} have come out the other way are the rug-pull and
+added-tool rows under \texttt{runtime-tools}, and the control row under all
+three. Those depend on canonicalisation behaving, on the digest covering the
+fields we think it covers, and on the register actually diverging. Any of them
+could have failed, and during development the equivalent of the control row is
+what catches a detector that has become stuck.
+
+\subsection{How we checked the rest}
+
+The suite is 76 tests, all offline. The ones that matter for this paper's
+claims are the ones that pin a property against a future edit rather than
+exercise a happy path:
+
+\begin{itemize}[leftmargin=1.2em, itemsep=0.15em]
+\item \texttt{the\_witness\_class\_is\_inside\_the\_digest} asserts that a
+      \textsc{Declared} component does not hash like a \textsc{Measured} one,
+      which pins P10's fork 2 in the direction we took. Reversing that fork is
+      a visible test failure rather than a quiet behaviour change.
+\item \texttt{every\_witness\_tag\_is\_distinct} and
+      \texttt{every\_event\_kind\_tag\_is\_distinct} assert that no two
+      variants share a wire tag. A copy-paste that gave two evidence classes
+      the same string would undo fork 2's resolution without touching the code
+      that implements it.
+\item \texttt{the\_manifest\_digest\_of\_a\_two\_kind\_manifest\_is\_pinned}
+      turns a reordering of the kind enumeration into a test failure. The
+      declaration order of that enumeration decides concatenation order and
+      therefore the digest of every multi-kind manifest; reordering it looks
+      cosmetic in review.
+\item \texttt{a\_static\_deployment\_never\_advances\_its\_register} pins the
+      property that the running commitment degenerates exactly to the static
+      one when nothing changes.
+\item \texttt{replaying\_a\_truncated\_log\_does\_not\_reproduce\_the\_register}
+      is the property that makes the register worth keeping.
+\item \texttt{content\_poisoning\_is\_not\_detected\_by\_any\_profile}
+      asserts the negative result against all three profiles, on purpose. Its
+      comment says it is the row most likely to be deleted by somebody tidying
+      the suite. It should not be.
+\end{itemize}
+
+\section{What It Costs}
+\label{sec:cost}
+
+The design's central bet is fork 5: that an MCP server's identity should be a
+digest of the tool list as re-measured, rather than an endpoint URL and a
+declared version. Re-measurement is what makes the rug-pull visible. The
+obvious objection is cost, because re-measurement happens per call and the
+Proof-of-Control standard's commentary sets a per-action budget of
+\SI{15}{\milli\second} \cite{pocspec}.
+
+\subsection{The measurement}
+
+We measured the local half: canonicalisation and hashing of a synthetic tool
+list, in process, with the list built before the timing loop and a
+100-iteration warm-up outside it. Seven repetitions per size, 10\,000
+iterations each, one host.
+
+\begin{table}[htbp]
+\centering
+\small
+\sisetup{table-number-alignment=center}
+\begin{tabular}{@{}rS[table-format=3.3]S[table-format=3.3]S[table-format=3.3]S[table-format=2.1]S[table-format=1.4]@{}}
+\toprule
+\textbf{Tools} & {\textbf{Min} (\si{\micro\second})} &
+{\textbf{Median} (\si{\micro\second})} & {\textbf{Max} (\si{\micro\second})} &
+{\textbf{Spread} (\%)} & {\textbf{Median as \% of \SI{15}{\milli\second}}} \\
+\midrule
+1   & 1.250   & 1.277   & 1.386   & 10.9 & 0.0085 \\
+2   & 1.983   & 2.045   & 2.149   & 8.4  & 0.0136 \\
+4   & 3.281   & 3.346   & 3.430   & 4.5  & 0.0223 \\
+8   & 6.047   & 6.197   & 6.364   & 5.2  & 0.0413 \\
+16  & 11.404  & 11.587  & 11.861  & 4.0  & 0.0772 \\
+32  & 22.006  & 22.494  & 22.613  & 2.8  & 0.1500 \\
+64  & 43.083  & 43.310  & 43.921  & 1.9  & 0.2887 \\
+128 & 84.491  & 84.945  & 87.629  & 3.7  & 0.5663 \\
+256 & 176.164 & 177.259 & 182.886 & 3.8  & 1.1817 \\
+\bottomrule
+\end{tabular}
+\caption{Local cost of one MCP tool-list re-measurement. Seven repetitions per
+row, 10\,000 iterations per repetition, Apple M5 Max, \texttt{rustc 1.97.1},
+release build. Spread is $(\max-\min)/\min$.}
+\label{tab:cost}
+\end{table}
+
+The cost is linear in list size. A least-squares fit over the nine sizes gives
+\SI{0.685}{\micro\second} per tool with a fixed cost of about
+\SI{0.27}{\micro\second}; taking the marginal cost between the 64- and
+256-tool rows instead gives \SI{0.698}{\micro\second} per tool. The fit
+under-predicts the small end by about 7\%, which is what you would expect from
+a straight line dominated by the large sizes, so the per-tool figure is the
+number to quote and the intercept is not.
+
+Extrapolating the fit, a tool list would need roughly 22\,000 entries before
+local re-measurement consumed the entire \SI{15}{\milli\second} budget. At
+256 tools it consumes 1.2\% of it.
+
+\subsection{One run is not a benchmark}
+
+The repetitions turned up something that changes how the previously committed
+figures should be read. The results file in the repository reports
+\SI{9.635}{\micro\second} at 8 tools, from a single run. The median of seven
+repetitions on the same host, same toolchain, same binary, is
+\SI{6.197}{\micro\second}. A single standalone run we took while preparing
+this paper landed at \SI{7.021}{\micro\second}, between the two.
+
+That is a factor of 1.55 between two measurements of the same quantity on the
+same machine. Within a sweep the spread is 1.9\%--10.9\% and tightens as the
+work per iteration grows, which is the ordinary shape of timing noise. Across
+sweeps, at the small end, it is not small at all.
+
+The ordering --- first-run slowest, sweep-median fastest --- is consistent
+with a warm-up effect that the in-process 100-iteration warm-up does not
+cover: that loop warms the allocator and the branch predictors, and does
+nothing about CPU frequency or scheduler placement. We label that a hypothesis
+rather than a finding, because we did not test it, and testing it properly
+means pinning frequency and affinity, which we did not do.
+
+The practical consequence is a correction to our own earlier reporting: the
+\SI{9.635}{\micro\second} figure is not wrong as a record of one run, and it
+overstates the steady-state cost by about half. Both figures support the same
+conclusion --- the local cost is two to three orders of magnitude below the
+budget --- which is why this did not change any argument. It would have
+changed one if the true figure had been near the budget.
+
+\subsection{What this does not settle}
+
+Fork 5 is not resolved by Table~\ref{tab:cost}, and we want to be blunt about
+the gap because a table of microseconds is exactly the kind of artefact that
+gets cited as though it settled something.
+
+What is measured is canonicalisation and hashing. What is not measured is the
+round trip to a remote MCP server, which is the operator's network. That round
+trip is expected to dominate the total, by a margin large enough that the
+local cost is a rounding error inside it. A negligible local cost is a
+\emph{necessary} condition for re-measurement being affordable inside the
+per-action budget. It is not a \emph{sufficient} one. Whether re-measurement
+is affordable end-to-end depends on a number this repository cannot produce,
+because producing it requires a real deployment with a real network and real
+servers, and we have none of those.
+
+For scale, the standard's own commentary records a single hardware attestation
+quote at \SI{39.5}{\milli\second} \cite{pocspec} --- already over the
+per-action budget on its own. The interesting comparison for fork 5 is against
+that kind of number, not against ours.
+
+\section{What We Still Don't Know}
+\label{sec:unknown}
+
+\subsection{The forks we did not resolve}
+
+\spectrum{} implements a design that leaves eight forks open, and it is not
+the case that the tool takes the recommended branch on each. It resolves one.
+Table~\ref{tab:forks} is the accounting.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}L{3.6cm}L{11.2cm}@{}}
+\toprule
+\textbf{Fork} & \textbf{What this work does} \\
+\midrule
+1. SPDX support &
+\textbf{Diverges from the recommendation.} The design recommends reading both
+formats and emitting CycloneDX. This tool reads CycloneDX only. An operator
+with an SPDX document cannot use \texttt{compose}. A second reader is a second
+identity derivation to keep in agreement, and it is not built. \\
+\addlinespace
+2. Witness class in the digest &
+\textbf{Resolved, as recommended: inside.} Pinned in both directions by tests.
+\\
+\addlinespace
+5. MCP server identity &
+\textbf{Instrumented, not resolved.} \texttt{runtime-tools} implements
+re-measurement and Section~\ref{sec:cost} measures its local cost. The network
+round trip decides this fork and needs a deployment. \\
+\addlinespace
+7. Context linkability &
+\textbf{Half built.} See Section~\ref{sec:privacy}. \\
+\addlinespace
+3, 4, 6, 8 &
+\textbf{Untouched.} No branch is taken because nothing here reaches the
+decision: no field of this tool is emitted as an AgBOM digest, there is no
+prompt collector, no retriever, and no delegation. Claiming this tool ``takes
+the recommended branch'' on them would be an empty claim about code that does
+not exist. \\
+\bottomrule
+\end{tabular}
+\caption{P10's eight forks against what this implementation does.}
+\label{tab:forks}
+\end{table}
+
+One thing bearing on fork 3 is worth naming without closing it. The test
+\texttt{a\_static\_deployment\_never\_advances\_its\_register} pins the
+property the recommendation rests on --- that the running value degenerates
+exactly to the static root when nothing changes. That is evidence for the
+recommendation, not a resolution of it, because nothing in this tool fills the
+field the fork is about.
+
+\subsection{Influence, which nobody can compute}
+
+The standard's C1.2.2 asks for a link between retrieved content and the
+decision it influenced. No profile in this tool captures it, no field
+expresses it, and there is no API that could produce one.
+
+That absence is deliberate and it is enforced by there being no such field. A
+stub --- an \texttt{influence} column populated with retrieval scores, or
+attention weights, or a heuristic --- would be read as the C1.2.2 link by
+anybody downstream, and it would be wrong in a way that is very hard to detect
+from the outside, because a plausible number in a plausible column is
+indistinguishable from a real one. The tool records presence and never names
+it influence, and the coverage output says so on every run.
+
+We do not know how to compute this. We are not aware of anybody who does. It
+is the single largest gap between what a composition commitment provides and
+what the threat model wants from it.
+
+\subsection{The privacy regression we shipped behind a warning}
+\label{sec:privacy}
+
+\texttt{runtime-with-context} digests retrieved content, and a content-derived
+chunk digest is a cross-session, cross-agent fingerprint of what was read. Two
+evidence records carrying the same chunk digest prove that both agents read
+the same document. Across a fleet, that is a linkability channel that did not
+exist before the composition commitment was introduced --- built, by us, in
+the name of oversight.
+
+Fork 7 is the decision point and it is unresolved. What we did instead of
+resolving it is refuse to bury it: \texttt{spectrum coverage} keyed on a
+profile including retrieved chunks prints the warning as output, not as
+documentation. That is a mitigation for the operator who runs the command and
+no mitigation at all for the deployment that does not.
+
+The sibling tool \texttt{occultation} \cite{occultationtool} exists to cost
+out the unlinkability machinery that would be the actual answer here. The two
+halves do not meet: nothing in this repository consumes it, and we are not
+claiming that they compose without somebody doing that work.
+
+\subsection{Discipline that is written down and not enforced}
+
+Two properties in this design are intended discipline rather than enforced
+behaviour, and the distinction is not visible from the outside, so we state it
+here.
+
+Hosted-model weight identity should be \textsc{Declared} and never
+\textsc{Measured}: no measurement of a hosted model's weights exists from
+outside the provider. Training-data lineage should be \textsc{Opaque}. The
+code enforces neither. There is no model collector at all; no collector in the
+library ever constructs an \textsc{Opaque} component (only the test suite
+does, to check that such a component still has an identity); no test asserts
+either property; and the component type is a plain public structure, so a
+caller can write \textsc{Measured} against a hosted model today and nothing
+objects.
+
+These are rules written down before the code they constrain exists, rather
+than after. We think that is the right order. We also think a reader is
+entitled to know that today they are prose.
+
+\subsection{The cost of resolving fork 2 the way we did}
+
+Putting the witness class inside the digest means that improving your
+instrumentation changes your digest even though the system did not change.
+Move a component from \textsc{Declared} to \textsc{Measured} --- exactly the
+improvement you would want an operator to make --- and every downstream
+comparison reports a difference.
+
+We accepted that cost because the alternative is a digest in which an
+operator's typed version string is indistinguishable from measured bytes. But
+we have not measured the cost, and it is the kind of cost that lands on a
+fleet all at once: an instrumentation rollout looks like a fleet-wide
+composition change. The library reports witness changes as their own category,
+separately from content changes, which is the smallest useful mitigation and
+is not the same as knowing what a rollout does to a real deployment's alert
+volume.
+
+\subsection{The evidence base}
+
+One host, one afternoon, no deployment. The detection harness runs against a
+hostile server we wrote, presenting an attack we chose, to profiles we
+designed. There is no fleet, no third party, and no adversary who was not us.
+Every number in Section~\ref{sec:cost} is local, and the number that would
+decide fork 5 is not in this paper.
+
+We think the argument in Section~\ref{sec:works} survives that --- the
+rug-pull is a mechanical consequence of when you measure, not an empirical
+claim about how often anybody does it --- but the frequency question, the one
+an operator would actually ask, is untouched. We do not know how often tool
+definitions change between approval and call in real deployments. We do not
+know whether it ever happens maliciously. We have shown that if it happens,
+one profile sees it and another cannot.
+
+\section{Conclusion}
+
+An Agent Bill of Materials taken at task start is a constant function against
+the substitution it most needs to catch. Making it a running commitment fixes
+that for the capability surface: a tool list that changes between approval and
+call moves a 32-byte register, and the event names the component that moved.
+We measured what re-measurement costs locally --- around
+\SI{0.7}{\micro\second} per tool, a hundredth of the per-action budget at
+realistic list sizes --- and we did not measure the network round trip that
+will decide whether it is affordable.
+
+The same construction does nothing for content. A poisoned document that is
+validly sourced and faithfully recorded moves the register exactly as a benign
+one does, and the commitment records arrival rather than detecting anything.
+We assert that negative in the test suite so it cannot quietly become a
+positive, and we have said plainly that the harness re-states this result
+rather than discovering it.
+
+So the answer we would give P10 is narrower than the question hoped for:
+
+\begin{quote}
+A running composition commitment is a change-detection control over the
+capability surface, and an inventory control over content.
+\end{quote}
+
+The second half of that sentence is the part worth carrying forward. It means
+the memory- and context-poisoning rows of the threat model are not addressed
+by any amount of additional rigour in the bill of materials, because the
+problem there is not that we failed to record the component --- we recorded it
+perfectly --- but that recording a component is not the same as knowing what
+it did. That is a different research programme, and this tool's contribution
+to it is to have declined to pretend otherwise, in a field on the profile
+where the pretence would have gone.
+
+\vspace{1em}
+\noindent\textcolor{aaimuted}{\rule{\textwidth}{0.6pt}}
+\vspace{0.4em}
+
+\noindent{\footnotesize\textbf{Availability.} The implementation, the three
+profiles, the detection harness and the benchmark are Apache-2.0 licensed
+\cite{spectrumtool}. The detection outcomes in Table~\ref{tab:detect} are
+reproduced by \texttt{spectrum detect}; Table~\ref{tab:cost} by
+\texttt{spectrum bench-mcp}. Every test in the repository runs offline, with
+no network, no credentials and no socket.}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

@@ -47,7 +47,23 @@ jobs:
       # NOT diff against a committed file: a wall-clock timing is never
       # byte-stable, so a `git diff --exit-code` guard on it would fail on
       # every run for reasons that have nothing to do with a code change.
-      # results/mcp-remeasurement.md is a committed artifact of one real,
-      # measured run and is not regenerated here.
+      # results/mcp-remeasurement-sweep.md is the authoritative reading of one
+      # real, measured sweep and is not regenerated here.
       - run: cargo run --release -- bench-mcp --tools 8
       - run: cargo run --release -- bench-mcp --tools 64
+
+  # The paper is built to prove it still compiles. It is deliberately NOT
+  # diff-gated against the committed PDF: tectonic stamps a CreationDate, so
+  # two builds of identical sources differ byte-for-byte and the check would
+  # fail on every run. Keeping paper/main.pdf current is a manual step.
+  #
+  # This job needs no DEPS_READ_TOKEN: it runs no cargo, so it never resolves
+  # the private `transit` dependency.
+  paper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: WtfJoke/setup-tectonic@v3
+      # No `-Z shell-escape`: this preamble omits `minted`, so the build has
+      # no pygments dependency to satisfy here.
+      - run: cd paper && tectonic main.tex

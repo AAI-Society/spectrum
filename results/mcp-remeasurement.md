@@ -1,5 +1,13 @@
 # MCP re-measurement: local cost
 
+> **Superseded as the headline figure by
+> [`mcp-remeasurement-sweep.md`](mcp-remeasurement-sweep.md).** Both runs below
+> are one run per cell. A seven-repetition sweep on the same host puts the
+> 8-tool figure at a median of 6.197 µs against the 9.635 µs recorded here — a
+> factor of 1.55. This file is kept as the record of what was actually run and
+> when; the sweep is the number to quote. Neither changes the conclusion, and
+> the sweep file says why.
+
 **Host:** Darwin Jims-MacBook-Pro-2.local 25.6.0 Darwin Kernel Version 25.6.0: Sat Jul 11
 15:27:04 PDT 2026; root:xnu-12377.161.13~4/RELEASE_ARM64_T6050 arm64 (`uname -a`), CPU
 Apple M5 Max (`sysctl -n machdep.cpu.brand_string`).
