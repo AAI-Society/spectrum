@@ -23,17 +23,28 @@ jobs:
       # load-bearing: deleting `git-fetch-with-cli = true` from
       # .cargo/config.toml silently breaks this authentication fix, and
       # nothing here would catch it happening.
-      - name: authenticate to the private dependency repo
+      #
+      # A MISSING SECRET IS NOT AN ERROR. It was, while transit was private:
+      # no token meant no clone, and failing here gave a clear reason instead
+      # of cargo's opaque one. Once it is public it is the opposite — an
+      # anonymous clone is correct and refusing to build would be an outage
+      # guarding nothing. So this step skips rather than fails, and the notice
+      # below says exactly where the build will break if transit is in fact
+      # still private. That keeps CI working across the switch, without
+      # needing the secret's removal and the repo's publication to be
+      # coordinated.
+      - name: authenticate to the dependency repo, if it is still private
         env:
           DEPS_READ_TOKEN: ${{ secrets.DEPS_READ_TOKEN }}
         run: |
           if [ -z "${DEPS_READ_TOKEN}" ]; then
-            echo "::error::DEPS_READ_TOKEN is not set. spectrum depends on a"
-            echo "::error::PRIVATE repo (transit) and the default GITHUB_TOKEN"
-            echo "::error::cannot read it. Create a fine-grained PAT with read"
-            echo "::error::access to the org's repos and add it as the"
-            echo "::error::DEPS_READ_TOKEN repository secret."
-            exit 1
+            echo "::notice::DEPS_READ_TOKEN is not set — cloning transit"
+            echo "::notice::anonymously. That is correct once it is public. If"
+            echo "::notice::it is still private, the build fails at the next"
+            echo "::notice::cargo step with 'could not read Username'; set the"
+            echo "::notice::secret to a fine-grained PAT with Contents:"
+            echo "::notice::Read-only on the org's repos."
+            exit 0
           fi
           git config --global \
             url."https://x-access-token:${DEPS_READ_TOKEN}@github.com/".insteadOf \
