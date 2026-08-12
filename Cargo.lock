@@ -858,7 +858,7 @@ checksum = "5d99f8c9a7727884afe522e9bd5edbfc91a3312b36a77b5fb8926e4c31a41801"
 [[package]]
 name = "transit"
 version = "0.1.0"
-source = "git+https://github.com/Task-force-for-AI-agents-in-Healthcare/transit.git?rev=3e10e13#3e10e1350bb03b26ad8a45ee68d61cccff6079f9"
+source = "git+https://github.com/AAI-Society/transit.git?rev=3e10e13#3e10e1350bb03b26ad8a45ee68d61cccff6079f9"
 dependencies = [
  "anyhow",
  "clap",
