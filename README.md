@@ -47,8 +47,10 @@ and does it catch anything a static one does not?
   identity is `Declared` and never `Measured` — no measurement of a hosted
   model's weights exists from outside the provider — and that training-data
   lineage is `Opaque`. **The code does not enforce either.** There is no model
-  collector (`src/collect/mod.rs` declares only `mcp`), `Witness::Opaque` is
-  constructed nowhere in the crate, no test asserts the property, and
+  collector (`src/collect/mod.rs` declares only `mcp`), no collector
+  constructs a `Witness::Opaque` component — the only constructions in the
+  repository are in `tests/component_identity.rs`, which checks that such a
+  component still has an identity — no test asserts the property, and
   `ComponentRef` is a plain public struct, so a caller can write `Measured`
   against a hosted model today and nothing objects. These are the rules the
   model collector of [build step 5](#the-eight-open-forks) must be built to,
